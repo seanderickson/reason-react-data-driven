@@ -3,7 +3,7 @@
 
 open Belt;
 
-
+// Example of exhaustive typing...
 // type irb = {
 //   id: int,
 //   funding: string,
@@ -50,9 +50,9 @@ open Belt;
 let apiUrl = "http://localhost:3000";
 
 type field = {
-  id: int,
+  // id: int,
   // Resource containing this field
-  resource_id: int,
+  resource_name: string,
   name: string,
   title: string,
   description: string,
@@ -87,8 +87,8 @@ module Decode = {
 
   let readField = json => 
     Json.Decode.{
-      id: json |> field("id", int),
-      resource_id: json |> field("resource_id", int),
+      // id: json |> field("id", int),
+      resource_name: json |> field("resource_name", string),
       name: json |> field("name", string),
       title: json |> field("title", string),
       description: json |> field("description", string),
@@ -109,57 +109,71 @@ module Decode = {
 };
 type apiResult('a) = Js.Promise.t(Result.t('a, string));
 
+let fetch = (url, decoder): apiResult('a) => {
+  Js.log2("fetching: ", url);
+  Js.Promise.(
+    Fetch.fetch(url)
+    |> then_(response=>{
+      let status = response->Fetch.Response.status;
+      let statusText = response->Fetch.Response.statusText;
+      if ( ! response -> Fetch.Response.ok){
+        resolve(Result.Error({j|Response Error: status=$status, "$statusText" |j}));
+      } else {
+        response 
+        |> Fetch.Response.json 
+        |> then_(json => resolve(Result.Ok(decoder(json))));
+      }
+    })
+    |> catch(err =>{
+      resolve(Result.Error({j|API error (error=$err)|j}));
+    })
+  );
+};
 exception BadStatus(string);
 
 module ApiClient = {
-  // let checkStatus = response => {
+  
+  let getFields = () => fetch(apiUrl ++ "/field", Decode.readFields);
 
-  // };
-  let getFields = () : apiResult(array(field)) => {
-    Js.Promise.(
-      Fetch.fetch(apiUrl ++ "/field")
-      |> then_(Fetch.Response.json)
-      |> then_(json => {
-          resolve(Result.Ok(Decode.readFields(json)));
-         })
-      |> catch(err => resolve(Result.Error({j|API error (error=$err)|j})))
-    );
-  };
-  let getResources = () : apiResult(array(resource)) => {
-    Js.Promise.(
-      Fetch.fetch(apiUrl ++ "/resource")
-      |> then_(response=>{
-        let status = response->Fetch.Response.status;
-        let statusText = response->Fetch.Response.statusText;
-        if ( ! response -> Fetch.Response.ok){
-          // NOTE: must raise an exception, resolve, or return another promise:
-          // - is there another way to exit?
-          // reject(BadStatus("Some failure, status: " ++ string_of_int(status) ++ ": " ++ statusText));
-          // raise(BadStatus("Some failure, status: " ++ string_of_int(status) ++ ": " ++ statusText));
-          resolve(Result.Error({j|Connection failed: status=$status, $statusText |j}));
-        } else {
-          response 
-          |> Fetch.Response.json 
-          |> then_(json => resolve(Result.Ok(Decode.readResources(json))));
-        }
+  let getResources = () => fetch(apiUrl ++ "/resource", Decode.readResources);
+
+  let buildResources = () => {
+    getFields()
+    |> Js.Promise.then_(result => {
+        switch (result) {
+          | Result.Ok(fields) =>{
+            getResources()
+            |> Js.Promise.then_(result1 =>{
+              switch(result1) {
+                | Result.Ok(resources:resources) =>
+                    Js.Promise.resolve(Result.Ok(
+                      resources 
+                      -> Array.map(resource => {
+                          {...resource, 
+                            fields: fields 
+                              |> Js.Array.filter(f => f.resource_name==resource.name)}
+                        })
+                    ))
+                | Result.Error(message) => Js.Promise.resolve(Result.Error(message))
+              }
+            })
+          }
+          | Result.Error(message) => Js.Promise.resolve(Result.Error(message))
+        };
       })
-      // |> then_(json => {
-      //     resolve(Result.Ok(Decode.readResources(json)));
-      //    })
-      |> catch(err => resolve(Result.Error({j|API error (error=$err)|j})))
-    );
   };
 
-  let getResources = () : apiResult(array(resource)) => {
-    Js.Promise.(
-      Fetch.fetch(apiUrl ++ "/resource")
-      |> then_(Fetch.Response.json)
-      |> then_(json => {
-          resolve(Result.Ok(Decode.readResources(json)));
-         })
-      |> catch(err => resolve(Result.Error({j|API error (error=$err)|j})))
-    );
-  };
+
+  // let getResources = () : apiResult(array(resource)) => {
+  //   Js.Promise.(
+  //     Fetch.fetch(apiUrl ++ "/resource")
+  //     |> then_(Fetch.Response.json)
+  //     |> then_(json => {
+  //         resolve(Result.Ok(Decode.readResources(json)));
+  //        })
+  //     |> catch(err => resolve(Result.Error({j|API error (error=$err)|j})))
+  //   );
+  // };
 
 };
 
@@ -179,15 +193,14 @@ module ResourceContext = {
 
   let reactContext = React.createContext(None);
 
-
   module Provider = {
     [@react.component]
     let make = (~children) => {
+
       let (resourceState, setResourceState) = React.useState(() => initialResourceState);
 
       let fetchResources = () => {
-        Js.log("handle click...");
-        ApiClient.getResources()
+        ApiClient.buildResources()
         |> Js.Promise.then_(result => {
             switch (result) {
             | Result.Ok(resources) => setResourceState(_=>{...initialResourceState, resources: Some(resources)})
@@ -198,6 +211,14 @@ module ResourceContext = {
         |> ignore;
       };
 
+      React.useEffect1(() => {
+        Js.log("Initial fetch...");
+        fetchResources();
+        Some(() => {
+          Js.log("cleanup Effect");
+        });
+      }, [||]);
+
       let ctx: option(t) =
         Some({
           resourceState,
@@ -205,7 +226,7 @@ module ResourceContext = {
           setResources: () => (),
         })
         |> (it => React.useMemo1(() => it, [| resourceState |]));
-
+        // TODO: useMemo1 may require a shallow compare
       Common.reactContextProvider(
         ~children,
         ~context=reactContext,
@@ -224,19 +245,3 @@ module ResourceContext = {
   };
 };
 
-
-// let context = React.createContext(initialResourceState);
-
-// module ContextProvider = {
-//   let make = context->React.Context.provider;
-
-//   [@bs.obj]
-//   external makeProps:
-//     (~value: resourceState, ~children: React.element, ~key: string=?, unit) =>
-//     {
-//       .
-//       "value": resourceState,
-//       "children": React.element,
-//     } =
-//     "";
-// };

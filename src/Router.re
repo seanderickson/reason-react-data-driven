@@ -24,8 +24,10 @@ let initialResourceState:resourceState = {
 [@react.component]
 let make = () => {
 
+  // let (route, setRoute) = React.useState(
+  //   ()=>mapUrlToRoute(ReasonReactRouter.dangerouslyGetInitialUrl()));
   let (route, setRoute) = React.useState(
-    ()=>mapUrlToRoute(ReasonReactRouter.dangerouslyGetInitialUrl()));
+    ()=>ReasonReactRouter.dangerouslyGetInitialUrl());
   
   // let (resourceState, setResourceState) = React.useState(
   //   ()=>initialResourceState);
@@ -57,54 +59,51 @@ let make = () => {
       }
   );
 
-  // let fetchResources = (event) => {
-  //   Js.log("handle click...");
-  //   ApiClient.getResources()
-  //   |> Js.Promise.then_(result => {
-  //       switch (result) {
-  //       | Result.Ok(resources) => setResourceState(_=>{...initialResourceState, resources: Some(resources)})
-  //       | Result.Error(message) => setResourceState(_=>{...initialResourceState, error: Some(message)})
-  //       };
-  //       Js.Promise.resolve();
-  //     })
-  //   |> ignore;
-  // };
-
-  // let {resourceState, fetchResources, setResources}: Store.ResourceContext.t = Store.ResourceContext.useResources();
-
   React.useEffect(() => {
-    let watcherId = ReasonReactRouter.watchUrl(url=>setRoute( _ => url |> mapUrlToRoute));
-    // if (route == Resource){
-    //   // get route
-
-    // }
+    // let watcherId = ReasonReactRouter.watchUrl(url=>setRoute( _ => url |> mapUrlToRoute));
+    let watcherId = ReasonReactRouter.watchUrl(url=>setRoute( _ => url));
     Some(() => {
       Js.log("apply Effect");
       ReasonReactRouter.unwatchUrl(watcherId);
     });
   });
 
-  <Store.ResourceContext.Provider>
-    <div>
-    // <button onClick=(_=>fetchResources()) >(str("Fetch Resources..."))</button>
-    // <br/>
-    <Modal 
-      dispatchModal
-      customClass="foo" 
-      show=modalState.shown >
-      (str(modalState.message))
-    </Modal>
-    <div className="wrapper">
-    <div>
+  let testUrl =  (url: ReasonReact.Router.url, test) => 
+    switch(url.path) {
+      |  [testval, ..._] => testval==test
+      | _ => false
+    };
+
+  let printResourceMenu = resources => {
     <ul>
-      // <li><Link href="project" selected=((route == Project)) >(str("project"))</Link></li>
-      // <li><Link href="microscope" selected=((route == Microscope)) >(str("microscope"))</Link></li>
-      <li><Link href="resource" selected=((route == Resource)) >(str("Resources"))</Link></li>
+    (resources
+    |> Array.map(_, resource => {
+      <li key=resource.name ><Link href=resource.name selected=(testUrl(route, resource.name)) >(str(resource.title))</Link></li>
+    })
+    |> ReasonReact.array)
     </ul>
-    </div>
+  };
+
+  let {resourceState, fetchResources, setResources}: Store.ResourceContext.t = Store.ResourceContext.useResources();
+  
+    <div>
+      // <button onClick=(_=>fetchResources()) >(str("Fetch Resources..."))</button>
+      // <br/>
+      <Modal 
+        dispatchModal
+        customClass="foo" 
+        show=modalState.shown >
+        (str(modalState.message))
+      </Modal>
+      <div className="wrapper">
+        (switch(resourceState.resources) {
+          | Some(resources) => resources |> printResourceMenu
+          | None => ReasonReact.null
+        })      
+        <div className="content">
     (
       {
-        switch(route) {
+        switch(route.path) {
           // | Project =>
           //   <ProjectForm 
           //     handleSubmit=setProjectState
@@ -116,8 +115,9 @@ let make = () => {
           //     key="ms_form"
           //     initialState=msState
           //     dispatchModal />
-          | Resource =>
+          | ["resource",..._] =>
             <ResourceListing  />
+          | _ => (str("Error, unknown route: " ++ (route.path |> Belt.List.toArray |> Js.Array.joinWith("/"))))
           // | Planned =>
           //   <SimpleForm 
           //     handleSubmit
@@ -128,12 +128,12 @@ let make = () => {
           //     handleSubmit
           //     key="actual_form"
           //     initialState=self.state.values />
-          | Project => ReasonReact.null
-          | Microscope => ReasonReact.null
+          // | Project => ReasonReact.null
+          // | Microscope => ReasonReact.null
         }
       }
     )
+      </div>
+    </div>
   </div>
-  </div>
-  </Store.ResourceContext.Provider>;
 };
