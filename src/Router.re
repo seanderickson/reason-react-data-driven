@@ -2,41 +2,13 @@ open Belt;
 open Common;
 open Store;
 
-module BMS = Belt.Map.String;
-
-let mapUrlToRoute = (url: ReasonReact.Router.url) => 
-  switch(url.path) {
-    // | ["project"] => Project
-    // | ["microscope"] => Microscope
-    | ["resource"] => Resource;
-    // | ["planned"] => Planned
-    // | ["actual"] => Actual
-    | _ => Resource
-  };
-
-
-let initialResourceState:resourceState = {
-  resources: None,
-  error: None,
-  isLoading: true
-  };
-
 [@react.component]
 let make = () => {
 
-  // let (route, setRoute) = React.useState(
-  //   ()=>mapUrlToRoute(ReasonReactRouter.dangerouslyGetInitialUrl()));
   let (route, setRoute) = React.useState(
     ()=>ReasonReactRouter.dangerouslyGetInitialUrl());
-  
-  // let (resourceState, setResourceState) = React.useState(
-  //   ()=>initialResourceState);
 
-  // let (projectState, setProjectState) = React.useState(
-  //   ()=>initialProjectState);
-  
-  // let (msState, setMsState) = React.useState(
-  //   ()=>initialMsState);
+  Js.log2("route:", route);
 
   let (modalState, dispatchModal) = React.useReducer(
     (state, action)=>
@@ -60,7 +32,6 @@ let make = () => {
   );
 
   React.useEffect(() => {
-    // let watcherId = ReasonReactRouter.watchUrl(url=>setRoute( _ => url |> mapUrlToRoute));
     let watcherId = ReasonReactRouter.watchUrl(url=>setRoute( _ => url));
     Some(() => {
       Js.log("apply Effect");
@@ -86,9 +57,12 @@ let make = () => {
 
   let {resourceState, fetchResources, setResources}: Store.ResourceContext.t = Store.ResourceContext.useResources();
   
+  let getResource = (resourceName) => switch(resourceState.resources) {
+      | Some(resources) => resources -> Belt.Array.getBy(resource => resource.name==resourceName)
+      | None => None
+    };
+
     <div>
-      // <button onClick=(_=>fetchResources()) >(str("Fetch Resources..."))</button>
-      // <br/>
       <Modal 
         dispatchModal
         customClass="foo" 
@@ -104,32 +78,18 @@ let make = () => {
     (
       {
         switch(route.path) {
-          // | Project =>
-          //   <ProjectForm 
-          //     handleSubmit=setProjectState
-          //     key="project_form"
-          //     initialState=projectState />
-          // | Microscope => 
-          //   <MicroscopeForm 
-          //     handleSubmit=setMsState
-          //     key="ms_form"
-          //     initialState=msState
-          //     dispatchModal />
           | ["resource",..._] =>
             <ResourceListing  />
+          | [resourceName, ..._] => {
+              Js.log3("switch to path: ", route.path, resourceName);
+              let foundResource = getResource(resourceName);
+              Js.log2("found resource: ", foundResource);
+              switch(foundResource){
+                | Some(resource) => <EntityListing key=resource.name resource />
+                | None => ReasonReact.null
+              }
+            }
           | _ => (str("Error, unknown route: " ++ (route.path |> Belt.List.toArray |> Js.Array.joinWith("/"))))
-          // | Planned =>
-          //   <SimpleForm 
-          //     handleSubmit
-          //     key="planned_form"
-          //     initialState=self.state.values />
-          // | Actual =>
-          //   <SimpleForm 
-          //     handleSubmit
-          //     key="actual_form"
-          //     initialState=self.state.values />
-          // | Project => ReasonReact.null
-          // | Microscope => ReasonReact.null
         }
       }
     )

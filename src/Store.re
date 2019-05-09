@@ -106,7 +106,53 @@ module Decode = {
       fields: [||]
     };
   let readResources = json => Json.Decode.(json |> array(readResource));
+
+  let getField = (resource, fieldName) => {
+    resource.fields
+    |> Array.getBy(_, field => field.name==fieldName);
+  };
+
+  let fieldDecoderExn = (json, resource, fieldName) => {
+    let f = getField(resource, fieldName);
+    open Json.Decode;
+    switch(f){
+      | Some(schemaField) =>{
+        let data_type = schemaField.data_type; 
+        switch(schemaField.data_type) {
+          | "string" => json 
+            |> optional(field(fieldName, string))
+            |> opt => switch(opt) {
+              | Some(x) => x
+              | None => "-"
+            }
+          | "integer" => json 
+            |> optional(field(fieldName, int))
+            |> opt => switch(opt){
+              | Some(x) => string_of_int(x)
+              | None => "-"
+            }
+          | _ => {j|unknown type for field: "$fieldName" - "$data_type" |j}
+        }
+      }
+      | None => "no schema for field: " ++ fieldName
+    };
+  };
+  let fieldDecoder = (json, resource, fieldName) => {
+    open Json.Decode;
+    try {
+      fieldDecoderExn(json, resource, fieldName);
+    } {
+    | Js.Exn.Error(e) =>
+      switch (Js.Exn.message(e)) {
+      | Some(message) => {j|Error: $message|j}
+      | None => "An unknown error occurred"
+      }
+    | DecodeError(msg) => msg
+    };
+  };
+
 };
+
 type apiResult('a) = Js.Promise.t(Result.t('a, string));
 
 let fetch = (url, decoder): apiResult('a) => {
@@ -129,6 +175,29 @@ let fetch = (url, decoder): apiResult('a) => {
     })
   );
 };
+
+let fetchJsonArray = (url): apiResult(array(Js.Json.t))   => {
+  // let arrayDecoder = (json:Js.Json.t) => json->Json.Decode.array;
+  let nullDecoder = (json) => json;
+  Js.Promise.(
+    Fetch.fetch(url)
+    |> then_(response=>{
+      let status = response->Fetch.Response.status;
+      let statusText = response->Fetch.Response.statusText;
+      if ( ! response -> Fetch.Response.ok){
+        resolve(Result.Error({j|Response Error: status=$status, "$statusText" |j}));
+      } else {
+        response 
+        |> Fetch.Response.json 
+        |> then_(json => resolve(Result.Ok(Json.Decode.(json |> array(nullDecoder)))));
+      }
+    })
+    |> catch(err =>{
+      resolve(Result.Error({j|API error (error=$err)|j}));
+    })
+  );
+};
+
 exception BadStatus(string);
 
 module ApiClient = {
@@ -163,6 +232,7 @@ module ApiClient = {
       })
   };
 
+  let getEntityListing = (resourceName) =>  fetchJsonArray(apiUrl ++ "/" ++ resourceName);
 
   // let getResources = () : apiResult(array(resource)) => {
   //   Js.Promise.(
@@ -198,7 +268,7 @@ module ResourceContext = {
     let make = (~children) => {
 
       let (resourceState, setResourceState) = React.useState(() => initialResourceState);
-
+  
       let fetchResources = () => {
         ApiClient.buildResources()
         |> Js.Promise.then_(result => {
