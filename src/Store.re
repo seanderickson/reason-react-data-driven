@@ -74,15 +74,6 @@ resource = {
 and fields = array(field)
 and resources = array(resource);
 
-type resourceState = {
-  // user: option(user),
-  // users: option(listResponse(user)),
-  // listing: option(array(string)),
-  resources: option(resources),
-  error: option(string),
-  isLoading: bool
-};
-
 module Decode = {
 
   let readField = json => 
@@ -228,16 +219,34 @@ module ApiClient = {
 
 };
 
-let initialResourceState:resourceState = {
-  resources: None,
-  error: None,
-  isLoading: true
-  };
+type webLoadingData('a) = 
+  | NotAsked
+  | Loading
+  | LoadFailure(string)
+  | LoadSuccess('a);
 
+
+// type resourceState = {
+//   // user: option(user),
+//   // users: option(listResponse(user)),
+//   // listing: option(array(string)),
+//   resources: option(resources),
+//   error: option(string),
+//   isLoading: bool
+// };
+
+// let initialResourceState:resourceState = {
+//   resources: None,
+//   error: None,
+//   isLoading: true
+//   };
+
+type resourceState = webLoadingData(option(resources));
+let initialResourceState = NotAsked;
 
 module ResourceContext = {
   type t = {
-    resourceState: resourceState,
+    resourceState,
     fetchResources: unit => unit,
     setResources: unit => unit,
   };
@@ -251,11 +260,12 @@ module ResourceContext = {
       let (resourceState, setResourceState) = React.useState(() => initialResourceState);
   
       let fetchResources = () => {
+        setResourceState(_=>Loading);
         ApiClient.buildResources()
         |> Js.Promise.then_(result => {
             switch (result) {
-            | Result.Ok(resources) => setResourceState(_=>{...initialResourceState, resources: Some(resources)})
-            | Result.Error(message) => setResourceState(_=>{...initialResourceState, error: Some(message)})
+            | Result.Ok(resources) => setResourceState(_=>LoadSuccess(Some(resources)))
+            | Result.Error(message) => setResourceState(_=>LoadFailure(message))
             };
             Js.Promise.resolve();
           })

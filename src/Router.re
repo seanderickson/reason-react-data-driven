@@ -58,10 +58,13 @@ let make = () => {
 
   let {resourceState, fetchResources, setResources}: Store.ResourceContext.t = Store.ResourceContext.useResources();
   
-  let getResource = (resourceName) => switch(resourceState.resources) {
-      | Some(resources) => resources -> Belt.Array.getBy(resource => resource.name==resourceName)
-      | None => None
+  let getResource = (resourceName) => switch(resourceState) {
+      | LoadSuccess(resources) => resources 
+        -> Belt.Option.flatMap(
+          rlist=>rlist->Belt.Array.getBy(resource => resource.name==resourceName))
+      | _ => None
     };
+
 
     <div>
       <Modal 
@@ -71,10 +74,15 @@ let make = () => {
         (str(modalState.message))
       </Modal>
       <div className="wrapper">
-        (switch(resourceState.resources) {
-          | Some(resources) => resources |> printResourceMenu
-          | None => ReasonReact.null
-        })      
+        (switch(resourceState) {
+          | NotAsked => (str("Not asked..."))
+          | LoadFailure(msg) => (str("Load failure: " ++ msg))
+          | Loading => (str("Loading..."))
+          | LoadSuccess(resources) => switch(resources) {
+              | Some(resources) => resources -> printResourceMenu
+              | None => str("No resources found")
+          }
+        })
         <div className="content">
       {
         Js.log2("Path: ", route.path);

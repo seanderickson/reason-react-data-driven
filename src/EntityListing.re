@@ -2,16 +2,8 @@ open Belt;
 open Common;
 open Store;
 
-
-type state = {
-  entityListing: option(array(Js.Json.t)),
-  error: option(string),
-  isLoading: bool
-};
-
-let initialState = {
-  entityListing: None, error: None, isLoading: true
-};
+type state = webLoadingData(option(array(Js.Json.t)));
+let initialState = NotAsked;
 
 [@react.component]
 let make = (~resource: resource )=> {
@@ -19,11 +11,12 @@ let make = (~resource: resource )=> {
   let (state, setState) = React.useState(() => initialState);
 
   let fetchEntities = () => {
+    setState(_=>Loading);
     ApiClient.getEntityListing(resource.name)
     |> Js.Promise.then_(result => {
       switch(result) {
-        | Result.Ok(entities) => setState(_ => {...initialState, entityListing: Some(entities) })
-        | Result.Error(message) => setState(_=>{...initialState, error: Some(message)})
+        | Result.Ok(entities) => setState(_ => LoadSuccess(Some(entities)))
+        | Result.Error(message) => setState(_=>LoadFailure(message))
         };
         Js.Promise.resolve();
       })
@@ -81,16 +74,14 @@ let make = (~resource: resource )=> {
   <div id="entities">
     <button onClick=(_=>fetchEntities()) >(str("Fetch: " ++ resource.title))</button>
     <br/>
-    (switch(state.entityListing) {
-      | Some(entities) => entities |> printEntities
-      | None => ReasonReact.null
-    })
-
-    (switch(state.error) {
-      | Some(error) => {
-        <div className="error" >(str(error))</div>
+    (switch(state) {
+      | NotAsked => (str("Not asked..."))
+      | LoadFailure(msg) => (str("Load failure: " ++ msg))
+      | Loading => (str("Loading..."))
+      | LoadSuccess(entities) => switch(entities) {
+          | Some(entities) => entities -> printEntities
+          | None => str("No entities found")
       }
-      | None => ReasonReact.null
     })
   </div>
 };

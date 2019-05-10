@@ -2,16 +2,8 @@ open Belt;
 open Common;
 open Store;
 
-
-type state = {
-  detailObject: option(Js.Json.t),
-  error: option(string),
-  isLoading: bool
-};
-
-let initialState = {
-  detailObject: None, error: None, isLoading: true
-};
+type state = webLoadingData(option(Js.Json.t));
+let initialState = NotAsked;
 
 [@react.component]
 let make = (~resource: resource, ~id: string, ~initialEntity=?, () )=> {
@@ -19,11 +11,12 @@ let make = (~resource: resource, ~id: string, ~initialEntity=?, () )=> {
   let (state, setState) = React.useState(() => Belt.Option.getWithDefault(initialEntity, initialState));
 
   let fetchEntity = () => {
+    setState(_=>Loading);
     ApiClient.getEntity(resource.name, id)
     |> Js.Promise.then_(result => {
       switch(result) {
-        | Result.Ok(entity) => setState(_ => {...initialState, detailObject: Some(entity) })
-        | Result.Error(message) => setState(_=>{...initialState, error: Some(message)})
+        | Result.Ok(entity) => setState(_ => LoadSuccess(Some(entity)))
+        | Result.Error(message) => setState(_=>LoadFailure(message))
         };
         Js.Promise.resolve();
       })
@@ -31,7 +24,7 @@ let make = (~resource: resource, ~id: string, ~initialEntity=?, () )=> {
   };
 
   React.useEffect1(() => {
-    if (state.detailObject == None) fetchEntity();
+    if (state == NotAsked) fetchEntity();
     Some(() => {
       Js.log("cleanup Effect");
     });
@@ -78,18 +71,15 @@ let make = (~resource: resource, ~id: string, ~initialEntity=?, () )=> {
   <div id="entity">
     <button onClick=(_=>fetchEntity()) >(str("Fetch: " ++ resource.title ++ "/" ++ id))</button>
     <br/>
-    (switch(state.detailObject) {
-      | Some(entity) => entity |> printEntity
-      | None => ReasonReact.null
-    })
-
-    (switch(state.error) {
-      | Some(error) => {
-        <div className="error" >(str(error))</div>
+    (switch(state) {
+      | NotAsked => (str("Not asked..."))
+      | LoadFailure(msg) => (str("Load failure: " ++ msg))
+      | Loading => (str("Loading..."))
+      | LoadSuccess(entity) => switch(entity) {
+          | Some(entity) => entity -> printEntity
+          | None => str("No entity found")
       }
-      | None => ReasonReact.null
     })
-
 
   </div>
 };

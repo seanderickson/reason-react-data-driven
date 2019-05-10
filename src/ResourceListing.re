@@ -41,18 +41,15 @@ let make = ()=> {
   <div id="resources">
     <button onClick=(_=>fetchResources()) >(str("Fetch Resources..."))</button>
     <br/>
-    (switch(resourceState.resources) {
-      | Some(resources) => resources |> printResources
-      | None => ReasonReact.null
-    })
-
-    (switch(resourceState.error) {
-      | Some(error) => {
-        <div className="error" >(str(error))</div>
+    (switch(resourceState) {
+      | NotAsked => (str("Not asked..."))
+      | LoadFailure(msg) => (str("Load failure: " ++ msg))
+      | Loading => (str("Loading..."))
+      | LoadSuccess(resources) => switch(resources) {
+          | Some(resources) => resources -> printResources
+          | None => str("No resources found")
       }
-      | None => ReasonReact.null
     })
-
 
   </div>
 };
