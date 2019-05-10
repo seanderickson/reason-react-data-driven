@@ -37,33 +37,45 @@ let make = (~resource: resource )=> {
     });
   }, [|resource.name|]);
 
- 
+  
+  let handleRoute = (endpoint, id, evt) => {
+    ReactEvent.Synthetic.preventDefault(evt);
+    ReasonReactRouter.push(
+      "/" ++ Js.Array.joinWith("/", [|endpoint, id|]));
+  };
+
   let printEntities = entities => {
-    
     <div>
-    <h3>(str("Entity Listing: " ++ resource.title))</h3>
-    <form className="grid_table" id="entity_table" >
-      <div key="header" className="grid_table_row grid_table_header" >
-        (resource.fields
-        |> Array.map(_, field => {
-          <label key=field.name className="grid_table_row_cell" >(str(field.title))</label>
-        })
-        |> ReasonReact.array)
-      </div>
-    (entities
-    |> Array.mapWithIndex(_, (i,entity) => {
-      let fieldReader = Store.Decode.fieldDecoder(entity, resource);
-      <div key=(string_of_int(i)) className="grid_table_row" >
-        (resource.fields
-        |> Array.map(_, field => {
-          <div key=field.name className="grid_table_row_cell">(str(fieldReader(field.name)))</div>
-        })
-        |> ReasonReact.array)
-      </div>
-    })
-    |> ReasonReact.array)
-    </form>
-  </div>
+      <h3>(str("Entity Listing: " ++ resource.title))</h3>
+      <form className="grid_table" id="entity_table" >
+        <div key="header" className="grid_table_row grid_table_header" >
+          (resource.fields
+          |> Array.map(_, field => {
+            <label key=field.name className="grid_table_row_cell" >(str(field.title))</label>
+          })
+          |> ReasonReact.array)
+        </div>
+      (entities
+      |> Array.mapWithIndex(_, (i,entity) => {
+        let fieldReader = Store.Decode.fieldDecoder(entity, resource);
+        <div key=(string_of_int(i)) className="grid_table_row" >
+          (resource.fields
+          |> Array.map(_, field => {
+            let fvalue = fieldReader(field.name);
+            <div key=field.name className="grid_table_row_cell">
+              (switch(field.ref_endpoint) {
+                | Some(endpoint) => 
+                      <a onClick=handleRoute(endpoint, fvalue) href=("/" ++ endpoint ++ "/" ++ fvalue) >(str(fvalue))</a>
+                | None => (str(fvalue))
+              })
+            </div>
+          })
+          |> ReasonReact.array)
+        </div>
+      })
+      |> ReasonReact.array)
+      </form>
+    </div>
   };
 
   <div id="entities">
@@ -80,7 +92,5 @@ let make = (~resource: resource )=> {
       }
       | None => ReasonReact.null
     })
-
-
   </div>
 };

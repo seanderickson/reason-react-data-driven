@@ -151,6 +151,8 @@ module Decode = {
     };
   };
 
+  let nullDecoder = (json) => json;
+  let jsonArrayDecoder = Json.Decode.array(nullDecoder);
 };
 
 type apiResult('a) = Js.Promise.t(Result.t('a, string));
@@ -168,28 +170,6 @@ let fetch = (url, decoder): apiResult('a) => {
         response 
         |> Fetch.Response.json 
         |> then_(json => resolve(Result.Ok(decoder(json))));
-      }
-    })
-    |> catch(err =>{
-      resolve(Result.Error({j|API error (error=$err)|j}));
-    })
-  );
-};
-
-let fetchJsonArray = (url): apiResult(array(Js.Json.t))   => {
-  // let arrayDecoder = (json:Js.Json.t) => json->Json.Decode.array;
-  let nullDecoder = (json) => json;
-  Js.Promise.(
-    Fetch.fetch(url)
-    |> then_(response=>{
-      let status = response->Fetch.Response.status;
-      let statusText = response->Fetch.Response.statusText;
-      if ( ! response -> Fetch.Response.ok){
-        resolve(Result.Error({j|Response Error: status=$status, "$statusText" |j}));
-      } else {
-        response 
-        |> Fetch.Response.json 
-        |> then_(json => resolve(Result.Ok(Json.Decode.(json |> array(nullDecoder)))));
       }
     })
     |> catch(err =>{
@@ -231,8 +211,9 @@ module ApiClient = {
         };
       })
   };
+  let getEntityListing = (resourceName) =>  fetch(apiUrl ++ "/" ++ resourceName, Decode.jsonArrayDecoder);
 
-  let getEntityListing = (resourceName) =>  fetchJsonArray(apiUrl ++ "/" ++ resourceName);
+  let getEntity = (resourceName, id) => fetch(apiUrl ++ "/" ++ resourceName ++ "/" ++ id, Decode.nullDecoder)
 
   // let getResources = () : apiResult(array(resource)) => {
   //   Js.Promise.(

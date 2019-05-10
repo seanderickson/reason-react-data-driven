@@ -5,8 +5,9 @@ open Store;
 [@react.component]
 let make = () => {
 
-  let (route, setRoute) = React.useState(
-    ()=>ReasonReactRouter.dangerouslyGetInitialUrl());
+  let route = ReasonReactRouter.useUrl();
+  // let (route, setRoute) = React.useState(
+  //   ()=>ReasonReactRouter.dangerouslyGetInitialUrl());
 
   Js.log2("route:", route);
 
@@ -32,10 +33,10 @@ let make = () => {
   );
 
   React.useEffect(() => {
-    let watcherId = ReasonReactRouter.watchUrl(url=>setRoute( _ => url));
+    // let watcherId = ReasonReactRouter.watchUrl(url=>setRoute( _ => url));
     Some(() => {
       Js.log("apply Effect");
-      ReasonReactRouter.unwatchUrl(watcherId);
+      // ReasonReactRouter.unwatchUrl(watcherId);
     });
   });
 
@@ -49,7 +50,7 @@ let make = () => {
     <ul>
     (resources
     |> Array.map(_, resource => {
-      <li key=resource.name ><Link href=resource.name selected=(testUrl(route, resource.name)) >(str(resource.title))</Link></li>
+      <li key=resource.name ><Link href=("/" ++ resource.name) selected=(testUrl(route, resource.name)) >(str(resource.title))</Link></li>
     })
     |> ReasonReact.array)
     </ul>
@@ -75,24 +76,28 @@ let make = () => {
           | None => ReasonReact.null
         })      
         <div className="content">
-    (
       {
+        Js.log2("Path: ", route.path);
         switch(route.path) {
           | ["resource",..._] =>
             <ResourceListing  />
-          | [resourceName, ..._] => {
-              Js.log3("switch to path: ", route.path, resourceName);
-              let foundResource = getResource(resourceName);
-              Js.log2("found resource: ", foundResource);
-              switch(foundResource){
-                | Some(resource) => <EntityListing key=resource.name resource />
-                | None => ReasonReact.null
-              }
+          | [resourceName] => {
+            let foundResource = getResource(resourceName);
+            switch(foundResource){
+              | Some(resource) => <EntityListing key=resource.name resource />
+              | None => (str("Unknown resource: " ++ resourceName))
             }
+          }
+          | [resourceName, entityId] => {
+            let foundResource = getResource(resourceName);
+            switch(foundResource){
+              | Some(resource) =><DetailView key=(resource.name ++ ":" ++ entityId) resource id=entityId />
+              | None => (str("Unknown resource: " ++ resourceName))
+            }
+          }
           | _ => (str("Error, unknown route: " ++ (route.path |> Belt.List.toArray |> Js.Array.joinWith("/"))))
         }
       }
-    )
       </div>
     </div>
   </div>
