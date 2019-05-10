@@ -9,7 +9,8 @@ module.exports = {
   mode: isProd ? 'production' : 'development',
   output: {
     path: outputDir,
-    filename: 'Index.js'
+    filename: 'Index.js',
+    publicPath: '/'
   },
   plugins: [
     new HtmlWebpackPlugin({
@@ -30,5 +31,5 @@ module.exports = {
         loader: 'style-loader!css-loader' // Run both loaders
       }
     ]
-  }  
+  }
 };
