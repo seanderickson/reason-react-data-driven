@@ -9,8 +9,6 @@ let make = () => {
   // let (route, setRoute) = React.useState(
   //   ()=>ReasonReactRouter.dangerouslyGetInitialUrl());
 
-  Js.log2("route:", route);
-
   let (modalState, dispatchModal) = React.useReducer(
     (state, action)=>
       switch(action) {
@@ -35,7 +33,7 @@ let make = () => {
   React.useEffect(() => {
     // let watcherId = ReasonReactRouter.watchUrl(url=>setRoute( _ => url));
     Some(() => {
-      Js.log("apply Effect");
+      Js.log("cleanup Effect router...");
       // ReasonReactRouter.unwatchUrl(watcherId);
     });
   });
@@ -85,21 +83,28 @@ let make = () => {
         })
         <div className="content">
       {
-        Js.log2("Path: ", route.path);
+        // Js.log2("Path: ", route.path->List.toArray);
         switch(route.path) {
-          | ["resource",..._] =>
-            <ResourceListing  />
+          // | ["resource",..._] =>
+          //   <ResourceListing  />
+          | [] => ReasonReact.null
           | [resourceName] => {
             let foundResource = getResource(resourceName);
             switch(foundResource){
-              | Some(resource) => <EntityListing key=resource.name resource />
+              | Some(resource) => <EntityListingTable key=resource.name resource />
               | None => (str("Unknown resource: " ++ resourceName))
             }
           }
-          | [resourceName, entityId] => {
+          | [resourceName, entityId, ...tail] => {
             let foundResource = getResource(resourceName);
             switch(foundResource){
-              | Some(resource) =><DetailView key=(resource.name ++ ":" ++ entityId) resource id=entityId />
+              | Some(resource) =>{
+                switch(tail) {
+                  | ["edit"] => <DetailView key=(resource.name ++ ":" ++ entityId) resource id=entityId viewState=DetailView.Edit/>
+                  | _ =>  <DetailView key=(resource.name ++ ":" ++ entityId) resource id=entityId />
+                }
+ 
+              }
               | None => (str("Unknown resource: " ++ resourceName))
             }
           }

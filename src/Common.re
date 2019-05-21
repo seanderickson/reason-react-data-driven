@@ -30,15 +30,6 @@
 //   magnification: string,
 // };
 
-type route = 
-  | Project
-  | Microscope
-  | Resource;
-  // | Samples
-  // | Planned
-  // | Actual;
-
-
 type modalAction = 
   Hide 
   | Show(string, (string)=>unit, (string)=>unit)

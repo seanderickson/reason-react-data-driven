@@ -49,6 +49,10 @@ open Belt;
 
 let apiUrl = "http://localhost:3000";
 
+type dataType =
+  | String
+  | Integer;
+
 type field = {
   // id: int,
   // Resource containing this field
@@ -56,8 +60,7 @@ type field = {
   name: string,
   title: string,
   description: string,
-  // JSON data type: string, number, boolean, array, (object - not used?)
-  data_type: string,
+  data_type: dataType,
   // Display type; may imply conversion, e.g. string => date
   display_type: string,
   // If field refers to another entity; endpoint for that entity
@@ -74,6 +77,8 @@ resource = {
 and fields = array(field)
 and resources = array(resource);
 
+exception DecodeTypeException(string);
+
 module Decode = {
 
   let readField = json => 
@@ -83,7 +88,12 @@ module Decode = {
       name: json |> field("name", string),
       title: json |> field("title", string),
       description: json |> field("description", string),
-      data_type: json |> field("data_type", string),
+      data_type: json |> field("data_type", string) |> (v) => 
+       switch(v){
+        | "string" => String
+        | "integer" => Integer
+        | unknownType => raise(DecodeTypeException(unknownType))
+      },
       display_type: json |> field("display_type", string),
       ref_endpoint: json |> optional(field("ref_endpoint", string))
     };
@@ -103,47 +113,61 @@ module Decode = {
     |> Array.getBy(_, field => field.name==fieldName);
   };
 
-  let fieldDecoderExn = (json, resource, fieldName) => {
-    let f = getField(resource, fieldName);
+  let fieldDecoderExn = (json, schemaField:field):string => {
+    // let f = getField(resource, fieldName);
     open Json.Decode;
-    switch(f){
-      | Some(schemaField) =>{
-        let data_type = schemaField.data_type; 
-        switch(schemaField.data_type) {
-          | "string" => json 
-            |> optional(field(fieldName, string))
-            |> opt => switch(opt) {
-              | Some(x) => x
-              | None => "-"
-            }
-          | "integer" => json 
-            |> optional(field(fieldName, int))
-            |> opt => switch(opt){
-              | Some(x) => string_of_int(x)
-              | None => "-"
-            }
-          | _ => {j|unknown type for field: "$fieldName" - "$data_type" |j}
+    switch(schemaField.data_type) {
+      | String => json 
+        |> optional(field(schemaField.name, string))
+        |> Belt.Option.getWithDefault(_,"-")
+      | Integer => json 
+        |> optional(field(schemaField.name, int))
+        |> opt => switch(opt){
+          | Some(x) => string_of_int(x)
+          | None => "-"
         }
-      }
-      | None => "no schema for field: " ++ fieldName
-    };
+      | _ => {j|unknown type for field: "$schemaField.name" - "$schemaField.data_type" |j}
+    }
   };
-  let fieldDecoder = (json, resource, fieldName) => {
-    open Json.Decode;
+
+  let fieldDecoder = (json, field:field):string => {
     try {
-      fieldDecoderExn(json, resource, fieldName);
+      fieldDecoderExn(json, field);
     } {
     | Js.Exn.Error(e) =>
       switch (Js.Exn.message(e)) {
       | Some(message) => {j|Error: $message|j}
       | None => "An unknown error occurred"
       }
-    | DecodeError(msg) => msg
+    | Json.Decode.DecodeError(msg) => msg
+    };
+  };
+
+  let singleFieldDecode = (json:Js.Json.t, schemaField:field):string => {
+    switch(schemaField.data_type) {
+      | String => json |> Json.Decode.string
+      | Integer => json |> Json.Decode.int |> string_of_int
     };
   };
 
   let nullDecoder = (json) => json;
   let jsonArrayDecoder = Json.Decode.array(nullDecoder);
+};
+
+module Encode = {
+
+  let fieldEncoder = (dict:Js.Dict.t(Js.Json.t), field:field, value:string) => {
+      switch(field.data_type) {
+        | String => {
+          Js.Dict.set(dict, field.name, value |> Js.Json.string);
+        }
+        | Integer => {
+          Js.Dict.set(dict, field.name, float_of_string(value) |> Js.Json.number);
+        }
+      }
+      dict;
+  };
+
 };
 
 type apiResult('a) = Js.Promise.t(Result.t('a, string));
@@ -224,22 +248,6 @@ type webLoadingData('a) =
   | Loading
   | LoadFailure(string)
   | LoadSuccess('a);
-
-
-// type resourceState = {
-//   // user: option(user),
-//   // users: option(listResponse(user)),
-//   // listing: option(array(string)),
-//   resources: option(resources),
-//   error: option(string),
-//   isLoading: bool
-// };
-
-// let initialResourceState:resourceState = {
-//   resources: None,
-//   error: None,
-//   isLoading: true
-//   };
 
 type resourceState = webLoadingData(option(resources));
 let initialResourceState = NotAsked;

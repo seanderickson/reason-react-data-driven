@@ -40,35 +40,40 @@ let make = (~resource: resource )=> {
   let printEntities = entities => {
     <div>
       <h3 className="shadow">(str("Entity Listing: " ++ resource.title))</h3>
-      <form className="grid_table" id="entity_table" >
-        <div key="header" className="grid_table_row grid_table_header text-center" >
+      <table className="table-fixed min-w-full border-separate" id="entity_table" >
+        <thead>
+        <tr key="header" className="" >
           (resource.fields
           |> Array.map(_, field => {
-            <label key=field.name className="font-bold" >(str(field.title))</label>
+            <th key=field.name className="font-bold text-left" >(str(field.title))</th>
           })
           |> ReasonReact.array)
-        </div>
+        </tr>
+        </thead>
+        <tbody>
       (entities
       |> Array.mapWithIndex(_, (i,entity) => {
         // let fieldReader = Store.Decode.fieldDecoder(entity, resource);
-        <div key=(string_of_int(i)) className="grid_table_row" >
+        
+        <tr key=(string_of_int(i)) className="hover:bg-grey-lighter" >
           (resource.fields
           |> Array.map(_, field => {
             // let fvalue = fieldReader(field.name);
             let fvalue = Store.Decode.fieldDecoder(entity, field);
-            <div key=field.name className="grid_table_row_cell">
+            <td key=field.name className="text-left">
               (switch(field.ref_endpoint) {
                 | Some(endpoint) => 
                       <a onClick=handleRoute(endpoint, fvalue) href=("/" ++ endpoint ++ "/" ++ fvalue) >(str(fvalue))</a>
                 | None => (str(fvalue))
               })
-            </div>
+            </td>
           })
           |> ReasonReact.array)
-        </div>
+        </tr>
       })
       |> ReasonReact.array)
-      </form>
+      </tbody>
+      </table>
     </div>
   };
 

@@ -7,5 +7,5 @@ let handleClick = (href, event) =>
   };
 
 [@react.component]
-let make = (~href, ~selected, ~children) =>
+let make = (~href, ~selected=false, ~children) =>
   <a href={href} className=( selected?"selected":"") onClick=handleClick(href) >children</a>

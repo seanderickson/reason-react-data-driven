@@ -12,11 +12,11 @@ let make = ()=> {
     <h3>(str("Resources:"))</h3>
     <form className="grid_table" id="resources" >
       <div className="grid_table_row grid_table_header" >
-        <label className="grid_table_row_cell" >(str("Id"))</label>
-        <label className="grid_table_row_cell" >(str("Name"))</label>
-        <label className="grid_table_row_cell" >(str("Title"))</label>
-        <label className="grid_table_row_cell" >(str("Description"))</label>
-        <label className="grid_table_row_cell" >(str("Fields"))</label>
+        <label className="font-bold" >(str("Id"))</label>
+        <label className="font-bold" >(str("Name"))</label>
+        <label className="font-bold" >(str("Title"))</label>
+        <label className="font-bold" >(str("Description"))</label>
+        <label className="font-bold" >(str("Fields"))</label>
       </div>
     (resources
     |> Array.map( resource => {
