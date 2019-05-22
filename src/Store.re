@@ -51,7 +51,16 @@ let apiUrl = "http://localhost:3000";
 
 type dataType =
   | String
-  | Integer;
+  | Integer
+  | Boolean
+  | ArrayString;
+
+[@bs.deriving jsConverter]
+type validator = [
+  | `required
+  | `name
+  | `email ];
+
 
 type field = {
   // id: int,
@@ -64,7 +73,9 @@ type field = {
   // Display type; may imply conversion, e.g. string => date
   display_type: string,
   // If field refers to another entity; endpoint for that entity
-  ref_endpoint: option(string)
+  ref_endpoint: option(string),
+  validators: option(array(validator)),
+  editable: bool
 } 
 and 
 resource = {
@@ -81,7 +92,8 @@ exception DecodeTypeException(string);
 
 module Decode = {
 
-  let readField = json => 
+  let readField = json => {
+    Js.log2("decoding field: ", json);
     Json.Decode.{
       // id: json |> field("id", int),
       resource_name: json |> field("resource_name", string),
@@ -92,13 +104,23 @@ module Decode = {
        switch(v){
         | "string" => String
         | "integer" => Integer
-        | unknownType => raise(DecodeTypeException(unknownType))
+        | "arraystring" => ArrayString
+        | "boolean" => Boolean
+        | unknownType => raise(DecodeTypeException("Missing type conversion case for field data_type: " ++ unknownType ++ ", JSON: " ++ Js.Json.stringify(json)))
       },
       display_type: json |> field("display_type", string),
-      ref_endpoint: json |> optional(field("ref_endpoint", string))
+      ref_endpoint: json |> optional(field("ref_endpoint", string)),
+      validators: json |> optional(field("validators", array(string))) 
+        |> Belt.Option.map(_, 
+          (arrayString) => Belt.Array.map(arrayString, 
+            (v) => validatorFromJs(v) -> Belt.Option.getExn) ),
+      editable: json |> optional(field("editable", bool))
+        |> Belt.Option.getWithDefault(_,true)
     };
+  };
   let readFields = json => Json.Decode.(json |> array(readField));
-  let readResource = json => 
+  let readResource = json => {
+    Js.log2("decoding resource: ", json);
     Json.Decode.{
       id: json |> field("id", int),
       name: json |> field("name", string),
@@ -106,6 +128,7 @@ module Decode = {
       description: json |> field("description", string),
       fields: [||]
     };
+  };
   let readResources = json => Json.Decode.(json |> array(readResource));
 
   let getField = (resource, fieldName) => {
@@ -113,7 +136,7 @@ module Decode = {
     |> Array.getBy(_, field => field.name==fieldName);
   };
 
-  let fieldDecoderExn = (json, schemaField:field):string => {
+  let fieldDecoderExn = (json:Js.Json.t, schemaField:field):string => {
     // let f = getField(resource, fieldName);
     open Json.Decode;
     switch(schemaField.data_type) {
@@ -126,6 +149,12 @@ module Decode = {
           | Some(x) => string_of_int(x)
           | None => "-"
         }
+      | ArrayString => json 
+        |> optional(field(schemaField.name,array(string)))
+        |> Belt.Option.mapWithDefault(_, "-", v => v |> Js.Array.joinWith(", "))
+      | Boolean => json
+        |> optional(field(schemaField.name, bool))
+        |> Belt.Option.getWithDefault(_,true) |> string_of_bool 
       | _ => {j|unknown type for field: "$schemaField.name" - "$schemaField.data_type" |j}
     }
   };
@@ -147,6 +176,8 @@ module Decode = {
     switch(schemaField.data_type) {
       | String => json |> Json.Decode.string
       | Integer => json |> Json.Decode.int |> string_of_int
+      | ArrayString => json |> Json.Decode.(array(string)) |> Js.Array.joinWith(", ")
+      | Boolean => json |> Json.Decode.(bool) |> string_of_bool
     };
   };
 
@@ -155,19 +186,14 @@ module Decode = {
 };
 
 module Encode = {
+  exception UndefinedEncoder(string);
 
-  let fieldEncoder = (dict:Js.Dict.t(Js.Json.t), field:field, value:string) => {
-      switch(field.data_type) {
-        | String => {
-          Js.Dict.set(dict, field.name, value |> Js.Json.string);
-        }
-        | Integer => {
-          Js.Dict.set(dict, field.name, float_of_string(value) |> Js.Json.number);
-        }
-      }
-      dict;
-  };
-
+  let encodeField = (field:field, formValue: string):Js.Json.t => switch(field.data_type) {
+      | String => formValue |> Js.Json.string
+      | Integer => formValue |> float_of_string |> Js.Json.number
+      | Boolean => formValue |> bool_of_string |> Js.Json.boolean
+      | _ => raise(UndefinedEncoder({j|Encoder for "$field.name" is not defined|j}))
+    };
 };
 
 type apiResult('a) = Js.Promise.t(Result.t('a, string));
@@ -182,13 +208,15 @@ let fetch = (url, decoder): apiResult('a) => {
       if ( ! response -> Fetch.Response.ok){
         resolve(Result.Error({j|Response Error: status=$status, "$statusText" |j}));
       } else {
+        Js.log("Status ok, decoding json...");
         response 
         |> Fetch.Response.json 
         |> then_(json => resolve(Result.Ok(decoder(json))));
       }
     })
     |> catch(err =>{
-      resolve(Result.Error({j|API error (error=$err)|j}));
+      Js.log2("error", err);
+      resolve(Result.Error({j|API error (URL: $url, error=$err)|j}));
     })
   );
 };
