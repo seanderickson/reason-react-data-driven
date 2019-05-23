@@ -102,7 +102,7 @@ let make = (~resource: resource, ~id: string, ~viewState=View, ~initialEntity=?,
         switch(viewState) {
           | View => entity -> printEntity
           | Edit => 
-            <EditView resource=resource entity=entity 
+            <EditView resource=resource id=id entity=entity 
               cancelAction=(_=>ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ id)) />
         }
       }

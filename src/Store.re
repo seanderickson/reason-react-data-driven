@@ -55,6 +55,7 @@ type dataType =
   | Boolean
   | ArrayString;
 
+// Try out poly variant: the jsConverter generates the "validatorFromJs" function
 [@bs.deriving jsConverter]
 type validator = [
   | `required
@@ -106,7 +107,10 @@ module Decode = {
         | "integer" => Integer
         | "arraystring" => ArrayString
         | "boolean" => Boolean
-        | unknownType => raise(DecodeTypeException("Missing type conversion case for field data_type: " ++ unknownType ++ ", JSON: " ++ Js.Json.stringify(json)))
+        | unknownType => raise(
+          DecodeTypeException(
+            "Missing type conversion case for field data_type: "
+            ++ unknownType ++ ", JSON: " ++ Js.Json.stringify(json)))
       },
       display_type: json |> field("display_type", string),
       ref_endpoint: json |> optional(field("ref_endpoint", string)),
@@ -196,35 +200,76 @@ module Encode = {
     };
 };
 
-type apiResult('a) = Js.Promise.t(Result.t('a, string));
-
-let fetch = (url, decoder): apiResult('a) => {
-  Js.log2("fetching: ", url);
-  Js.Promise.(
-    Fetch.fetch(url)
-    |> then_(response=>{
-      let status = response->Fetch.Response.status;
-      let statusText = response->Fetch.Response.statusText;
-      if ( ! response -> Fetch.Response.ok){
-        resolve(Result.Error({j|Response Error: status=$status, "$statusText" |j}));
-      } else {
-        Js.log("Status ok, decoding json...");
-        response 
-        |> Fetch.Response.json 
-        |> then_(json => resolve(Result.Ok(decoder(json))));
-      }
-    })
-    |> catch(err =>{
-      Js.log2("error", err);
-      resolve(Result.Error({j|API error (URL: $url, error=$err)|j}));
-    })
-  );
-};
-
-exception BadStatus(string);
 
 module ApiClient = {
   
+  type apiResult('a) = Js.Promise.t(Result.t('a, string));
+
+  let fetch = (url, decoder): apiResult('a) => {
+    Js.log2("fetching: ", url);
+    Js.Promise.(
+      Fetch.fetch(url)
+      |> then_(response=>{
+        let status = response->Fetch.Response.status;
+        let statusText = response->Fetch.Response.statusText;
+        if ( ! response -> Fetch.Response.ok){
+          resolve(Result.Error({j|Response Error: status=$status, "$statusText" |j}));
+        } else {
+          Js.log("Status ok, decoding json...");
+          response 
+          |> Fetch.Response.json 
+          |> then_(json => resolve(Result.Ok(decoder(json))));
+        }
+      })
+      |> catch(err =>{
+        Js.log2("error", err);
+        resolve(Result.Error({j|API error (URL: $url, error=$err)|j}));
+      })
+    );
+  };
+
+  let test_mock_error_mode = true;
+
+  let postPatch = (url, method, decoder, payload:Js.Json.t): apiResult('a) => {
+    Js.log2("posting: ", url);
+
+    Js.Promise.(
+      Fetch.fetchWithInit(
+        url,
+        Fetch.RequestInit.make(
+          ~method_=method,
+          ~body=Fetch.BodyInit.make(Js.Json.stringify(payload)),
+          ~headers=Fetch.HeadersInit.make({"Content-Type": "application/json"}),
+          ()
+        )
+      )
+      |> then_(response=>{
+        let status = response->Fetch.Response.status;
+        let statusText = response->Fetch.Response.statusText;
+        if ( ! response -> Fetch.Response.ok){
+          resolve(Result.Error({j|Response Error: status=$status, "$statusText" |j}));
+        } else if (test_mock_error_mode) {
+          let mockFieldError = {j|{ 
+            "protocol_io": { "Unknown protocol": "This protocol is not registered", "message2": "second message" },
+            "primary_contact": { "Not registered": "user is not registered" } }
+            |j};
+          resolve(Result.Error(mockFieldError));
+        } else {
+          Js.log("Status ok, decoding json...");
+          response 
+          |> Fetch.Response.json 
+          |> then_(json => resolve(Result.Ok(decoder(json))));
+        }
+      })
+      |> catch(err =>{
+        Js.log2("post error", err);
+        resolve(Result.Error({j|API POST error(URL: $url, error=$err)|j}))
+      })
+    );
+  };
+
+  exception BadStatus(string);
+
   let getFields = () => fetch(apiUrl ++ "/field", Decode.readFields);
 
   let getResources = () => fetch(apiUrl ++ "/resource", Decode.readResources);
@@ -257,6 +302,10 @@ module ApiClient = {
   let getEntityListing = (resourceName) =>  fetch(apiUrl ++ "/" ++ resourceName, Decode.jsonArrayDecoder);
 
   let getEntity = (resourceName, id) => fetch(apiUrl ++ "/" ++ resourceName ++ "/" ++ id, Decode.nullDecoder)
+
+  let postEntity = (resourceName, payload) => postPatch(apiUrl ++ "/" ++ resourceName, Fetch.Post, Decode.nullDecoder, payload);
+
+  let patchEntity = (resourceName, id, payload) => postPatch(apiUrl ++ "/" ++ resourceName ++ "/" ++ id, Fetch.Patch, Decode.nullDecoder, payload);
 
   // let getResources = () : apiResult(array(resource)) => {
   //   Js.Promise.(
