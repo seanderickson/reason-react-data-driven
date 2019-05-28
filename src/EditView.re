@@ -173,7 +173,6 @@ let make = (~resource: resource, ~id: string, ~entity:Js.Json.t, ~cancelAction )
     };
 
   let printRow = (field: field) => {
-
     let value = Belt.Option.mapWithDefault(
       getCurrentFieldValue(field), "", 
       (jsonValue) => Store.Decode.singleFieldDecode(jsonValue, field));
@@ -186,11 +185,28 @@ let make = (~resource: resource, ~id: string, ~entity:Js.Json.t, ~cancelAction )
         </label>
       </div>
       ( if(field.editable){
-        <input className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight" 
-          id=("inline-" ++ field.name) type_=getHtmlFieldType(field) 
-          value=value 
-          onChange=updateField(field)>
-        </input>
+        
+        // TODO: rework - example select input  
+        ( if(field.vocabularies != None){
+          <select className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight" 
+          id=("inline-" ++ field.name)
+          onChange=updateField(field)
+          value=value
+           >
+            (Belt.Option.getExn(field.vocabularies)
+            |> Array.map(_, v=>{
+              <option key=v.key value=v.key >(str(v.title))</option>
+            })
+            |> ReasonReact.array)
+          </select>
+        }else{
+          <input className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight" 
+            id=("inline-" ++ field.name) type_=getHtmlFieldType(field) 
+            value=value 
+            onChange=updateField(field)>
+          </input>
+        })
+        // </div>
       } else {
         <div id=("inline-" ++ field.name) type_=getHtmlFieldType(field)>(str(value))</div>
       })
@@ -232,32 +248,22 @@ let make = (~resource: resource, ~id: string, ~entity:Js.Json.t, ~cancelAction )
         | Result.Error(message) =>{
           try ({
 
-            // Try to decode a dict of dict (string) ==> should be an easier way
-            let errorObj = Js.Json.decodeObject(Json.parseOrRaise(message));
+            // Decode a dict(dict(string)) 
             let errors: Js.Dict.t(Js.Dict.t(string)) = Js.Dict.empty();
 
-            Belt.Option.getExn(errorObj)
-            |> Js.Dict.entries |> Array.forEach(_,((key,v1)) => {
-              let fieldObj = v1 |> Js.Json.decodeObject;
-              switch(fieldObj){
-                | Some(fieldObjErrs) => {
-                  let fieldDict: Js.Dict.t(string) = Js.Dict.empty();
-                  fieldObjErrs |> Js.Dict.entries |> Array.forEach(_, 
-                    ((k,v)) => Js.Dict.set(fieldDict, k, v|> Js.Json.decodeString |> Belt.Option.getExn));
-                  
-                  Js.Dict.set(errors, key, fieldDict);
-                }
-                | None => ()
-              }
-            }
-            );
+            Js.Json.decodeObject(Json.parseOrRaise(message))
+            |> Belt.Option.getExn
+            |> Js.Dict.entries 
+            |> Array.forEach(_,((key,v)) => {
+              Js.Dict.set(errors, key, v |> Json.Decode.(dict(string)));
+            });
 
             setState(_=> SaveFail(currentEntity, None, Some(errors)));
             
           }) {
             | x => {
               Js.log3("SaveFail: err msg decode failure for msg: ", x, message);
-              setState(_=> SaveFail(currentEntity, Some({j|fail on decode: $message|j}), None));
+              setState(_=> SaveFail(currentEntity, Some({j|Failure on error decode: $message|j}), None));
             }
           }
 
@@ -275,7 +281,20 @@ let make = (~resource: resource, ~id: string, ~entity:Js.Json.t, ~cancelAction )
   };
 
   (switch(state) {
-    | SaveFail(_,_  ,_)
+    | SaveFail(_,optErrMsg,_) => {
+      <div id="entity">
+        <button style=(ReactDOMRe.Style.make(~display="none", ())) 
+          onClick=(_=>()) >(str("Save"))</button>
+        <button onClick=(_=>cancelAction()) >(str("Cancel"))</button>
+        <h3 className="shadow" >(str("Edit entity: " ++ resource.title ))</h3>
+        <div className="box-shadow border-red text-red">(str("Form Errors!"))</div>
+        (switch(optErrMsg){
+          | Some(errMsg) => <div className="text-purple">(str(errMsg))</div>
+          | None => ReasonReact.null
+        })
+        (printEntity())
+      </div>
+    }
     | Invalid(_,_) => {
       <div id="entity">
         <button style=(ReactDOMRe.Style.make(~display="none", ())) 
@@ -284,7 +303,6 @@ let make = (~resource: resource, ~id: string, ~entity:Js.Json.t, ~cancelAction )
         <h3 className="shadow" >(str("Edit entity: " ++ resource.title ))</h3>
         <div className="box-shadow border-red text-red">(str("Form Errors!"))</div>
         (printEntity())
-
       </div>
     }
     | Modified(currentEntity) => {
@@ -307,7 +325,7 @@ let make = (~resource: resource, ~id: string, ~entity:Js.Json.t, ~cancelAction )
     }
     | Saving(currentEntity) =>{
       <div>
-        <h3 className="shadow" >(str("Saving entity: " ++ resource.title ++ "/" ++ id ++ " \2026"  ))</h3>
+        <h3 className="shadow" >(str("Saving entity: " ++ resource.title ++ "/" ++ id ++ " ..."  ))</h3>
         (currentEntity |> printAsJson)
       </div>
     }

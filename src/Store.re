@@ -62,8 +62,15 @@ type validator = [
   | `name
   | `email ];
 
-
-type field = {
+type vocabulary = {
+  // id: int, 
+  scope: string,
+  key: string,
+  title: string,
+  description: option(string)
+} and vocabularies = array(vocabulary)
+and 
+field = {
   // id: int,
   // Resource containing this field
   resource_name: string,
@@ -76,7 +83,9 @@ type field = {
   // If field refers to another entity; endpoint for that entity
   ref_endpoint: option(string),
   validators: option(array(validator)),
-  editable: bool
+  editable: bool,
+  vocab_scope: option(string),
+  vocabularies: option(vocabularies)
 } 
 and 
 resource = {
@@ -89,10 +98,21 @@ resource = {
 and fields = array(field)
 and resources = array(resource);
 
+
 exception DecodeTypeException(string);
 
 module Decode = {
 
+  let readVocab = json : vocabulary => {
+    Js.log2("decoding field: ", json);
+    Json.Decode.{
+      key: json |> field("key", string),
+      scope: json |> field("scope", string),
+      title: json |> field("title", string),
+      description: json |> optional(field("description", string)),
+    };
+  };
+  let readVocabularies = json => Json.Decode.(json |> array(readVocab));
   let readField = json => {
     Js.log2("decoding field: ", json);
     Json.Decode.{
@@ -119,9 +139,12 @@ module Decode = {
           (arrayString) => Belt.Array.map(arrayString, 
             (v) => validatorFromJs(v) -> Belt.Option.getExn) ),
       editable: json |> optional(field("editable", bool))
-        |> Belt.Option.getWithDefault(_,true)
+        |> Belt.Option.getWithDefault(_,true),
+      vocab_scope: json |> optional(field("vocab_scope", string)),
+      vocabularies: None
     };
   };
+  
   let readFields = json => Json.Decode.(json |> array(readField));
   let readResource = json => {
     Js.log2("decoding resource: ", json);
@@ -228,7 +251,7 @@ module ApiClient = {
     );
   };
 
-  let test_mock_error_mode = true;
+  let test_mock_error_mode = false;
 
   let postPatch = (url, method, decoder, payload:Js.Json.t): apiResult('a) => {
     Js.log2("posting: ", url);
@@ -250,8 +273,8 @@ module ApiClient = {
           resolve(Result.Error({j|Response Error: status=$status, "$statusText" |j}));
         } else if (test_mock_error_mode) {
           let mockFieldError = {j|{ 
-            "protocol_io": { "Unknown protocol": "This protocol is not registered", "message2": "second message" },
-            "primary_contact": { "Not registered": "user is not registered" } }
+            "protocol_io": { "Unknown protocol": "This protocol is not registered", "Message2": "second message" },
+            "primary_contact": { "Duplicate": "Name is already used" } }
             |j};
           resolve(Result.Error(mockFieldError));
         } else {
@@ -270,35 +293,56 @@ module ApiClient = {
 
   exception BadStatus(string);
 
+  let getVocabularies = () => fetch(apiUrl ++ "/vocabulary", Decode.readVocabularies);
+
   let getFields = () => fetch(apiUrl ++ "/field", Decode.readFields);
 
   let getResources = () => fetch(apiUrl ++ "/resource", Decode.readResources);
 
-  let buildResources = () => {
-    getFields()
-    |> Js.Promise.then_(result => {
-        switch (result) {
-          | Result.Ok(fields) =>{
-            getResources()
-            |> Js.Promise.then_(result1 =>{
-              switch(result1) {
-                | Result.Ok(resources:resources) =>
-                    Js.Promise.resolve(Result.Ok(
-                      resources 
-                      -> Array.map(resource => {
-                          {...resource, 
-                            fields: fields 
-                              |> Js.Array.filter(f => f.resource_name==resource.name)}
-                        })
-                    ))
-                | Result.Error(message) => Js.Promise.resolve(Result.Error(message))
-              }
-            })
-          }
-          | Result.Error(message) => Js.Promise.resolve(Result.Error(message))
-        };
-      })
+  let assembleField = (field, vocabs) : field => {
+    switch(field.vocab_scope) {
+      | Some(vocab_scope ) => {
+        ...field, vocabularies: Some(vocabs |> Js.Array.filter(v => v.scope == vocab_scope))
+      }
+      | None => field
+    };
   };
+  let assembleResources = (resources: resources, fields, vocabs): resources => {
+
+    let assembledFields: fields = Array.map(fields, field => assembleField(field, vocabs));
+
+    resources 
+    |> Array.map(_, 
+      resource => {
+        {...resource, 
+          fields: assembledFields 
+            |> Js.Array.filter(f => f.resource_name==resource.name)}
+      });
+  };
+
+  let buildResources = () =>
+    getVocabularies()
+    |> Js.Promise.then_(
+      resultv => switch(resultv) {
+        | Result.Ok(vocabs) => 
+          getFields() 
+          |> Js.Promise.then_(
+            result1 => switch (result1) {
+              | Result.Ok(fields) => 
+                getResources() 
+                |> Js.Promise.then_(
+                  result => switch(result) {
+                    | Result.Ok(resources) => Js.Promise.resolve(Result.Ok(
+                        assembleResources(resources, fields, vocabs)))
+                    | Result.Error(message) => Js.Promise.resolve(Result.Error(message))
+                  }
+                )
+              | Result.Error(message) => Js.Promise.resolve(Result.Error(message))
+            })
+        | Result.Error(message) => Js.Promise.resolve(Result.Error(message))
+      }
+    ) 
+
   let getEntityListing = (resourceName) =>  fetch(apiUrl ++ "/" ++ resourceName, Decode.jsonArrayDecoder);
 
   let getEntity = (resourceName, id) => fetch(apiUrl ++ "/" ++ resourceName ++ "/" ++ id, Decode.nullDecoder)
@@ -306,17 +350,6 @@ module ApiClient = {
   let postEntity = (resourceName, payload) => postPatch(apiUrl ++ "/" ++ resourceName, Fetch.Post, Decode.nullDecoder, payload);
 
   let patchEntity = (resourceName, id, payload) => postPatch(apiUrl ++ "/" ++ resourceName ++ "/" ++ id, Fetch.Patch, Decode.nullDecoder, payload);
-
-  // let getResources = () : apiResult(array(resource)) => {
-  //   Js.Promise.(
-  //     Fetch.fetch(apiUrl ++ "/resource")
-  //     |> then_(Fetch.Response.json)
-  //     |> then_(json => {
-  //         resolve(Result.Ok(Decode.readResources(json)));
-  //        })
-  //     |> catch(err => resolve(Result.Error({j|API error (error=$err)|j})))
-  //   );
-  // };
 
 };
 
@@ -349,7 +382,10 @@ module ResourceContext = {
         ApiClient.buildResources()
         |> Js.Promise.then_(result => {
             switch (result) {
-            | Result.Ok(resources) => setResourceState(_=>LoadSuccess(Some(resources)))
+            | Result.Ok(resources) => {
+              Js.log2("Built resources:", resources);
+              setResourceState(_=>LoadSuccess(Some(resources)));
+            }
             | Result.Error(message) => setResourceState(_=>LoadFailure(message))
             };
             Js.Promise.resolve();
