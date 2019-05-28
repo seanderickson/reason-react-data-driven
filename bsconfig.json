@@ -17,5 +17,6 @@
   "bs-dependencies": [
     "reason-react", "bs-css", "bs-fetch", "@glennsl/bs-json"
   ],
+  "bsc-flags": ["-bs-g"],
   "refmt": 3
 }
