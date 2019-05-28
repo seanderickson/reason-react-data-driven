@@ -1,4 +1,3 @@
-
 // type projectState = {
 //   projectName: string,
 //   pi: string,
@@ -30,17 +29,17 @@
 //   magnification: string,
 // };
 
-type modalAction = 
-  Hide 
-  | Show(string, (string)=>unit, (string)=>unit)
+type modalAction =
+  | Hide
+  | Show(string, string => unit, string => unit)
   | ModalCancel
   | ModalOk;
 
 type modalState = {
   shown: bool,
   message: string,
-  callBackOk: (string)=>unit,
-  callBackCancel: (string)=>unit
+  callBackOk: string => unit,
+  callBackCancel: string => unit,
 };
 
 module BMS = Belt.Map.String;
