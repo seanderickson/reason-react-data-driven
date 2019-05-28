@@ -28,7 +28,21 @@ module.exports = {
     rules: [
       {
         test: /\.css$/, // Only .css files
-        loader: 'style-loader!css-loader' // Run both loaders
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'style-loader',
+          },
+          {
+            loader: 'css-loader',
+            options: {
+              importLoaders: 1,
+            }
+          },
+          {
+            loader: 'postcss-loader'
+          }
+        ]
       }
     ]
   }

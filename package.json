@@ -28,7 +28,9 @@
     "css-loader": "^2.1.1",
     "html-webpack-plugin": "^3.2.0",
     "json-server": "^0.14.2",
+    "postcss-loader": "^3.0.0",
     "style-loader": "^0.23.1",
+    "tailwindcss": "^0.7.4",
     "webpack": "^4.0.1",
     "webpack-cli": "^3.1.1",
     "webpack-dev-server": "^3.1.8"
