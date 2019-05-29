@@ -14,88 +14,90 @@ type state = editState(Js.Json.t);
 
 let getValue = event => ReactEvent.Form.target(event)##value;
 
+let validateField = (field: field, value: string): option(Js.Dict.t(string)) => {
+  switch (field.validators) {
+  | Some(validators) =>
+    let errors: Js.Dict.t(string) = Js.Dict.empty();
+    Belt.Array.forEach(validators, validator =>
+      switch (validator) {
+      | `required =>
+        if (Js.String.length(Js.String.trim(value)) == 0) {
+          Js.Dict.set(errors, "required", "required");
+        }
+
+      | `email =>
+        if (Js.String.length(Js.String.trim(value)) == 0) {
+          let emailRegex = [%bs.re {|/.*@.*\..+/|}];
+          if (!value->Js.Re.test(emailRegex)) {
+            Js.Dict.set(
+              errors,
+              "email",
+              "Email does not fit format: [name]@[host].[domain]",
+            );
+          };
+        }
+      | `name =>
+        if (Js.String.length(Js.String.trim(value)) == 0) {
+          Js.Dict.set(errors, "name", "May not be empty");
+        } else {
+          let nameRegex = [%bs.re {|/^[\w\s]+$/|}];
+          if (!value->Js.Re.test(nameRegex)) {
+            Js.Dict.set(
+              errors,
+              "name",
+              "Name must only include alphanumeric characters and spaces",
+            );
+          };
+        }
+      }
+    );
+    switch (Belt.Array.size(Js.Dict.keys(errors))) {
+    | 0 => None
+    | _ => Some(errors)
+    };
+  | None => None
+  };
+};
+
+let validateEntity =
+    (resource, updatedEntity): option(Js.Dict.t(Js.Dict.t(string))) => {
+  let errors: Js.Dict.t(Js.Dict.t(string)) = Js.Dict.empty();
+
+  Belt.Array.forEach(resource.fields, field =>
+    switch (Js.Dict.get(updatedEntity, field.name)) {
+    | Some(value) =>
+      let rawVal = Store.Decode.singleFieldDecode(value, field);
+      switch (validateField(field, rawVal)) {
+      | Some(fieldErrorDict) =>
+        Js.Dict.set(errors, field.name, fieldErrorDict)
+      | None => ()
+      };
+    | None => ()
+    }
+  );
+
+  switch (Belt.Array.size(Js.Dict.keys(errors))) {
+  | 0 => None
+  | _ => Some(errors)
+  };
+};
+
 [@react.component]
-let make =
-    (~resource: resource, ~id: string, ~entity: Js.Json.t, ~cancelAction) => {
+let make = (~resource: resource, ~id: string, ~entity: Js.Json.t, ~cancelAction ) => {
   let (state, setState) = React.useState(() => Edit(entity));
 
+  // Store the initial entity for detection of user updates:
+  // - decodeObject creates a Js.Dict(Js.Json.t)
   let initialEntity = entity |> Js.Json.decodeObject |> Belt.Option.getExn;
 
   let getInitialFieldValue = (field: field): option(Js.Json.t) =>
     Js.Dict.get(initialEntity, field.name);
 
-  let validateField =
-      (field: field, value: string): option(Js.Dict.t(string)) => {
-    Belt.Option.flatMap(
-      field.validators,
-      validators => {
-        let errors: Js.Dict.t(string) = Js.Dict.empty();
-        Belt.Array.forEach(validators, validator =>
-          switch (validator) {
-          | `required =>
-            if (Js.String.length(Js.String.trim(value)) == 0) {
-              Js.Dict.set(errors, "required", "required");
-            }
-
-          | `email =>
-            if (Js.String.length(Js.String.trim(value)) == 0) {
-              let emailRegex = [%bs.re {|/.*@.*\..+/|}];
-              if (!value->Js.Re.test(emailRegex)) {
-                Js.Dict.set(
-                  errors,
-                  "email",
-                  "Email does not fit format: [name]@[host].[domain]",
-                );
-              };
-            }
-          | `name =>
-            if (Js.String.length(Js.String.trim(value)) == 0) {
-              Js.Dict.set(errors, "name", "May not be empty");
-            } else {
-              let nameRegex = [%bs.re {|/^[\w\s]+$/|}];
-              if (!value->Js.Re.test(nameRegex)) {
-                Js.Dict.set(
-                  errors,
-                  "name",
-                  "Name must only include alphanumeric characters and spaces",
-                );
-              };
-            }
-          }
-        );
-        switch (Belt.Array.size(Js.Dict.keys(errors))) {
-        | 0 => None
-        | _ => Some(errors)
-        };
-      },
-    );
-  };
-
-  let validateEntity =
-      (updatedEntity): option(Js.Dict.t(Js.Dict.t(string))) => {
-    let errors: Js.Dict.t(Js.Dict.t(string)) = Js.Dict.empty();
-
-    Belt.Array.forEach(resource.fields, field =>
-      switch (Js.Dict.get(updatedEntity, field.name)) {
-      | Some(value) =>
-        let rawVal = Store.Decode.singleFieldDecode(value, field);
-        switch (validateField(field, rawVal)) {
-        | Some(fieldErrorDict) =>
-          Js.Dict.set(errors, field.name, fieldErrorDict)
-        | None => ()
-        };
-      | None => ()
-      }
-    );
-
-    switch (Belt.Array.size(Js.Dict.keys(errors))) {
-    | 0 => None
-    | _ => Some(errors)
-    };
-  };
-
+  // Track the current entity state:
+  // - Use a Js.Dict with the current field values
   let getUpdatedEntity = (): Js.Dict.t(Js.Json.t) =>
     switch (state) {
+    | SaveFail(x, _, _)
     | Invalid(x, _)
     | Modified(x) => x |> Js.Json.decodeObject |> Belt.Option.getExn
     | _ =>
@@ -115,17 +117,18 @@ let make =
     getCurrentFieldValue(field) != getInitialFieldValue(field);
 
   let updateField = (field: field, event) => {
-    let value = Js.String.trim(event->getValue);
+    
+    let value = event->getValue;
 
     let updatedEntity = getUpdatedEntity();
 
-    // Track errors
     let currentErrors: Js.Dict.t(Js.Dict.t(string)) =
       switch (state) {
       | Invalid(_, errDict) => errDict
       | _ => Js.Dict.empty()
       };
 
+    // Update field values by converting each input to its Js.Json.t equivalent
     try (
       {
         Js.Dict.set(
@@ -133,7 +136,7 @@ let make =
           field.name,
           Store.Encode.encodeField(field, value),
         );
-        switch (validateEntity(updatedEntity)) {
+        switch (validateEntity(resource, updatedEntity)) {
         | Some(reportedErrors) =>
           setState(_ =>
             Invalid(updatedEntity |> Js.Json.object_, reportedErrors)
@@ -246,7 +249,10 @@ let make =
            {str(value)}
          </div>;
        }}
-      {switch (getFieldError(field)) {
+
+      {
+        // FIXME: causes a mouse focus to be lost
+        switch (getFieldError(field)) {
        | Some(err) => <span className="text-red"> {str(err)} </span>
        | None => ReasonReact.null
        }}
@@ -316,6 +322,9 @@ let make =
     |> ignore;
   };
 
+  // let cancelAction = () =>
+  //   ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ id);
+
   switch (state) {
   | SaveFail(_, optErrMsg, _) =>
     <div id="entity">
@@ -358,19 +367,18 @@ let make =
     </div>
   | Edit(_) =>
     <div id="entity">
-      // Display the button; DOM refresh mouse focus otherwise
-
-        <button
-          style={ReactDOMRe.Style.make(~display="none", ())}
-          onClick={_ => ()}>
-          {str("Save")}
-        </button>
-        <button onClick={_ => cancelAction()}> {str("Cancel")} </button>
-        <h3 className="shadow">
-          {str("Edit entity: " ++ resource.title ++ "/" ++ id)}
-        </h3>
-        {printEntity()}
-      </div>
+      // Note: keep the node, with style change, so that DOM update is avoided
+      // - otherwise mouse focus is lost when the button appears (on Chrome 74.0)
+      <button
+        style={ReactDOMRe.Style.make(~display="none", ())} onClick={_ => ()}>
+        {str("Save")}
+      </button>
+      <button onClick={_ => cancelAction()}> {str("Cancel")} </button>
+      <h3 className="shadow">
+        {str("Edit entity: " ++ resource.title ++ "/" ++ id)}
+      </h3>
+      {printEntity()}
+    </div>
   | Saving(currentEntity) =>
     <div>
       <h3 className="shadow">
@@ -380,11 +388,12 @@ let make =
     </div>
   | SaveSuccess(newEntity) =>
     <div>
+      <button onClick={_ => cancelAction()}> {str("Back")} </button>
       <h3 className="shadow">
         {str("Save success for: " ++ resource.title ++ "/" ++ id)}
       </h3>
+      <h3 className="shadow"> {str("JSON posted:")} </h3>
       {newEntity |> printAsJson}
     </div>
-  | _ => ReasonReact.null
   };
 };

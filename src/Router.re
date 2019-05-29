@@ -4,9 +4,10 @@ open Store;
 
 [@react.component]
 let make = () => {
+
   let route = ReasonReactRouter.useUrl();
-  // let (route, setRoute) = React.useState(
-  //   ()=>ReasonReactRouter.dangerouslyGetInitialUrl());
+
+  // Modal state
 
   let (modalState, dispatchModal) =
     React.useReducer(
@@ -34,25 +35,29 @@ let make = () => {
       },
     );
 
-  React.useEffect(()
-    // let watcherId = ReasonReactRouter.watchUrl(url=>setRoute( _ => url));
-    =>
-      Some(
-        () =>
-          Js.log(
-            "cleanup Effect router...",
-            // ReasonReactRouter.unwatchUrl(watcherId);
-          ),
-      )
-    );
+  // Store (resources) state
 
-  let testUrl = (url: ReasonReact.Router.url, test) =>
-    switch (url.path) {
-    | [testval, ..._] => testval == test
-    | _ => false
+  let {resourceState, fetchResources, setResources}: Store.ResourceContext.t =
+    Store.ResourceContext.useResources();
+
+  let getResource = resourceName =>
+    switch (resourceState) {
+    | LoadSuccess(resources) =>
+      resources->Belt.Option.flatMap(rlist =>
+        rlist->Belt.Array.getBy(resource => resource.name == resourceName)
+      )
+    | _ => None
     };
 
+  // DOM methods
+
   let printResourceMenu = resources => {
+    let testUrl = (url: ReasonReact.Router.url, test) =>
+      switch (url.path) {
+      | [testval, ..._] => testval == test
+      | _ => false
+      };
+
     <ul>
       {resources
        |> Array.map(_, resource =>
@@ -67,18 +72,6 @@ let make = () => {
        |> ReasonReact.array}
     </ul>;
   };
-
-  let {resourceState, fetchResources, setResources}: Store.ResourceContext.t =
-    Store.ResourceContext.useResources();
-
-  let getResource = resourceName =>
-    switch (resourceState) {
-    | LoadSuccess(resources) =>
-      resources->Belt.Option.flatMap(rlist =>
-        rlist->Belt.Array.getBy(resource => resource.name == resourceName)
-      )
-    | _ => None
-    };
 
   <div>
     <Modal dispatchModal customClass="foo" show={modalState.shown}>
@@ -96,10 +89,7 @@ let make = () => {
          }
        }}
       <div className="content">
-        {// Js.log2("Path: ", route.path->List.toArray);
-         switch (route.path) {
-         // | ["resource",..._] =>
-         //   <ResourceListing  />
+        {switch (route.path) {
          | [] => ReasonReact.null
          | [resourceName] =>
            let foundResource = getResource(resourceName);
@@ -111,22 +101,7 @@ let make = () => {
          | [resourceName, entityId, ...tail] =>
            let foundResource = getResource(resourceName);
            switch (foundResource) {
-           | Some(resource) =>
-             switch (tail) {
-             | ["edit"] =>
-               <DetailView
-                 key={resource.name ++ ":" ++ entityId}
-                 resource
-                 id=entityId
-                 viewState=DetailView.Edit
-               />
-             | _ =>
-               <DetailView
-                 key={resource.name ++ ":" ++ entityId}
-                 resource
-                 id=entityId
-               />
-             }
+           | Some(resource) => <EntityView resource entityId urlStack=tail />
            | None => str("Unknown resource: " ++ resourceName)
            };
          | _ =>
