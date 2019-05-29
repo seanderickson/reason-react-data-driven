@@ -2,6 +2,8 @@
 
 open Belt;
 
+let debug_mode = true;
+
 // Example of exhaustive typing...
 // type irb = {
 //   id: int,
@@ -97,7 +99,9 @@ exception DecodeTypeException(string);
 
 module Decode = {
   let readVocab = (json): vocabulary => {
-    Js.log2("decoding field: ", json);
+    if (debug_mode) {
+      Js.log2("decoding vocab: ", json);
+    };
     Json.Decode.{
       key: json |> field("key", string),
       scope: json |> field("scope", string),
@@ -107,7 +111,9 @@ module Decode = {
   };
   let readVocabularies = json => Json.Decode.(json |> array(readVocab));
   let readField = json => {
-    Js.log2("decoding field: ", json);
+    if (debug_mode) {
+      Js.log2("decoding field: ", json);
+    };
     Json.Decode.{
       // id: json |> field("id", int),
       resource_name: json |> field("resource_name", string),
@@ -156,7 +162,9 @@ module Decode = {
 
   let readFields = json => Json.Decode.(json |> array(readField));
   let readResource = json => {
-    Js.log2("decoding resource: ", json);
+    if (debug_mode) {
+      Js.log2("decoding resource: ", json);
+    };
     Json.Decode.{
       id: json |> field("id", int),
       name: json |> field("name", string),
@@ -172,7 +180,14 @@ module Decode = {
   };
 
   let fieldDecoderExn = (json: Js.Json.t, schemaField: field): string => {
-    // let f = getField(resource, fieldName);
+    if (debug_mode) {
+      Js.log4(
+        "decode data field: ",
+        schemaField.resource_name,
+        schemaField.name,
+        json,
+      );
+    };
     Json.Decode.(
       switch (schemaField.data_type) {
       | String =>
@@ -220,6 +235,14 @@ module Decode = {
     };
 
   let singleFieldDecode = (json: Js.Json.t, schemaField: field): string => {
+    if (debug_mode) {
+      Js.log4(
+        "decode single field: ",
+        schemaField.resource_name,
+        schemaField.name,
+        json,
+      );
+    };
     switch (schemaField.data_type) {
     | String => json |> Json.Decode.string
     | Integer => json |> Json.Decode.int |> string_of_int
@@ -250,7 +273,9 @@ module ApiClient = {
   type apiResult('a) = Js.Promise.t(Result.t('a, string));
 
   let fetch = (url, decoder): apiResult('a) => {
-    Js.log2("fetching: ", url);
+    if (debug_mode) {
+      Js.log2("fetching: ", url);
+    };
     Js.Promise.(
       Fetch.fetch(url)
       |> then_(response => {
