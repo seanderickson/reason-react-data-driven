@@ -17,12 +17,6 @@ let make = (~resource: resource, ~id: string, ~entity: Js.Json.t, ()) => {
   };
 
   <div>
-    <button
-      onClick={_ =>
-        ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ id ++ "/edit")
-      }>
-      {str("Edit: " ++ resource.title ++ "/" ++ id)}
-    </button>
     <h3 className="shadow">
       {str("Entity detail: " ++ resource.title ++ ": " ++ id)}
     </h3>

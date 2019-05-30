@@ -24,7 +24,6 @@ let validateField = (field: field, value: string): option(Js.Dict.t(string)) => 
         if (Js.String.length(Js.String.trim(value)) == 0) {
           Js.Dict.set(errors, "required", "required");
         }
-
       | `email =>
         if (Js.String.length(Js.String.trim(value)) == 0) {
           let emailRegex = [%bs.re {|/.*@.*\..+/|}];
@@ -83,7 +82,8 @@ let validateEntity =
 };
 
 [@react.component]
-let make = (~resource: resource, ~id: string, ~entity: Js.Json.t, ~cancelAction ) => {
+let make =
+    (~resource: resource, ~id: string, ~entity: Js.Json.t, ~refreshAction) => {
   let (state, setState) = React.useState(() => Edit(entity));
 
   // Store the initial entity for detection of user updates:
@@ -117,7 +117,6 @@ let make = (~resource: resource, ~id: string, ~entity: Js.Json.t, ~cancelAction 
     getCurrentFieldValue(field) != getInitialFieldValue(field);
 
   let updateField = (field: field, event) => {
-    
     let value = event->getValue;
 
     let updatedEntity = getUpdatedEntity();
@@ -249,10 +248,8 @@ let make = (~resource: resource, ~id: string, ~entity: Js.Json.t, ~cancelAction 
            {str(value)}
          </div>;
        }}
-
-      {
-        // FIXME: causes a mouse focus to be lost
-        switch (getFieldError(field)) {
+      {// FIXME: causes a mouse focus to be lost
+       switch (getFieldError(field)) {
        | Some(err) => <span className="text-red"> {str(err)} </span>
        | None => ReasonReact.null
        }}
@@ -322,8 +319,19 @@ let make = (~resource: resource, ~id: string, ~entity: Js.Json.t, ~cancelAction 
     |> ignore;
   };
 
-  // let cancelAction = () =>
-  //   ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ id);
+  let printErrors = () =>
+    <div id="form-errors" className="box-shadow border-red text-red">
+      {switch (state) {
+       | SaveFail(_, optErrMsg, _) =>
+         {str("Form Errors!")};
+         switch (optErrMsg) {
+         | Some(errMsg) => <div className="text-purple"> {str(errMsg)} </div>
+         | None => ReasonReact.null
+         };
+       | Invalid(_, _) => str("Form Errors!")
+       | _ => ReasonReact.null
+       }}
+    </div>;
 
   switch (state) {
   | SaveFail(_, optErrMsg, _) =>
@@ -332,15 +340,9 @@ let make = (~resource: resource, ~id: string, ~entity: Js.Json.t, ~cancelAction 
         style={ReactDOMRe.Style.make(~display="none", ())} onClick={_ => ()}>
         {str("Save")}
       </button>
-      <button onClick={_ => cancelAction()}> {str("Cancel")} </button>
+      <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
       <h3 className="shadow"> {str("Edit entity: " ++ resource.title)} </h3>
-      <div className="box-shadow border-red text-red">
-        {str("Form Errors!")}
-      </div>
-      {switch (optErrMsg) {
-       | Some(errMsg) => <div className="text-purple"> {str(errMsg)} </div>
-       | None => ReasonReact.null
-       }}
+      {printErrors()}
       {printEntity()}
     </div>
   | Invalid(_, _) =>
@@ -349,36 +351,38 @@ let make = (~resource: resource, ~id: string, ~entity: Js.Json.t, ~cancelAction 
         style={ReactDOMRe.Style.make(~display="none", ())} onClick={_ => ()}>
         {str("Save")}
       </button>
-      <button onClick={_ => cancelAction()}> {str("Cancel")} </button>
+      <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
       <h3 className="shadow"> {str("Edit entity: " ++ resource.title)} </h3>
-      <div className="box-shadow border-red text-red">
-        {str("Form Errors!")}
-      </div>
+      {printErrors()}
       {printEntity()}
     </div>
   | Modified(currentEntity) =>
     <div id="entity">
       <button onClick={save(currentEntity)}> {str("Save")} </button>
-      <button onClick={_ => cancelAction()}> {str("Cancel")} </button>
+      <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
       <h3 className="shadow">
         {str("Edit entity: " ++ resource.title ++ "/" ++ id)}
       </h3>
+      {printErrors()}
       {printEntity()}
     </div>
   | Edit(_) =>
     <div id="entity">
       // Note: keep the node, with style change, so that DOM update is avoided
       // - otherwise mouse focus is lost when the button appears (on Chrome 74.0)
-      <button
-        style={ReactDOMRe.Style.make(~display="none", ())} onClick={_ => ()}>
-        {str("Save")}
-      </button>
-      <button onClick={_ => cancelAction()}> {str("Cancel")} </button>
-      <h3 className="shadow">
-        {str("Edit entity: " ++ resource.title ++ "/" ++ id)}
-      </h3>
-      {printEntity()}
-    </div>
+
+        <button
+          style={ReactDOMRe.Style.make(~display="none", ())}
+          onClick={_ => ()}>
+          {str("Save")}
+        </button>
+        <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+        <h3 className="shadow">
+          {str("Edit entity: " ++ resource.title ++ "/" ++ id)}
+        </h3>
+        {printErrors()}
+        {printEntity()}
+      </div>
   | Saving(currentEntity) =>
     <div>
       <h3 className="shadow">
@@ -388,7 +392,7 @@ let make = (~resource: resource, ~id: string, ~entity: Js.Json.t, ~cancelAction 
     </div>
   | SaveSuccess(newEntity) =>
     <div>
-      <button onClick={_ => cancelAction()}> {str("Back")} </button>
+      <button onClick={_ => refreshAction()}> {str("Back")} </button>
       <h3 className="shadow">
         {str("Save success for: " ++ resource.title ++ "/" ++ id)}
       </h3>
