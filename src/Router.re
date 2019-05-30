@@ -4,8 +4,9 @@ open Store;
 
 [@react.component]
 let make = () => {
-
   let route = ReasonReactRouter.useUrl();
+
+  Js.log2("Route: ", route);
 
   // Modal state
 
@@ -101,14 +102,15 @@ let make = () => {
          | [resourceName, entityId, ...tail] =>
            let foundResource = getResource(resourceName);
            switch (foundResource) {
-           | Some(resource) => <EntityView resource entityId urlStack=tail />
+           | Some(resource) =>
+             <EntityView
+               key={resource.name ++ "/" ++ entityId}
+               resource
+               entityId
+               urlStack=tail
+             />
            | None => str("Unknown resource: " ++ resourceName)
            };
-         | _ =>
-           str(
-             "Error, unknown route: "
-             ++ (route.path |> Belt.List.toArray |> Js.Array.joinWith("/")),
-           )
          }}
       </div>
     </div>
