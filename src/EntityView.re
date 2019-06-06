@@ -3,11 +3,17 @@ open Common;
 open Store;
 
 [@react.component]
-let make = (~resource: resource, ~entityId: string, ~urlStack: list(string)) => {
+let make =
+    (
+      ~resource: resource,
+      ~entityId: string,
+      ~urlStack: list(string),
+      ~initialState=NotAsked,
+    ) => {
   // Entity state
-
+  Js.log3("initialState", entityId, initialState);
   let (entityState: webLoadingData(Js.Json.t), setEntityState) =
-    React.useState(() => NotAsked);
+    React.useState(() => initialState);
 
   let fetchEntity = (resource, id) => {
     Js.log("fetch entity...");
@@ -28,6 +34,9 @@ let make = (~resource: resource, ~entityId: string, ~urlStack: list(string)) => 
       // useEffect1: will run when component is mounted, or when urlStack prop
       // is updated (even if it is the same route as the initial route)
       // - will trigger a refetch for both cases.
+      // - this is required to refetch after an edit, ReasonReactRouter.push
+      // does not remount.
+      Js.log3("fetchEntity, stack", urlStack, List.length(urlStack));
       fetchEntity(resource, entityId);
       Some(() => Js.log("cleanup Effect"));
     },
@@ -47,10 +56,7 @@ let make = (~resource: resource, ~entityId: string, ~urlStack: list(string)) => 
           // reset the state; but it will set a new urlStack prop. Therefore,
           // useEffect is used to fetch when either the component is mounted,
           // or when the urlStack prop is updated.
-          ReasonReactRouter.push(
-            "/" ++ resource.name ++ "/" ++ entityId,
-          )
-        }
+          ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ entityId)}
       />
     | _ =>
       <div>
