@@ -94,21 +94,21 @@ let make = () => {
            let foundResource = getResource(resourceName);
            switch (foundResource) {
            | Some(resource) =>
-             //  if (resourceName == "project") {
-             //    <Project
-             //      resource
-             //      entityId
-             //      urlStack=tail
-             //      // ReasonReact.null
-             //    />;
-             //  } else {
-             <EntityView
-               key={resource.name ++ "/" ++ entityId}
-               resource
-               entityId
-               urlStack=tail
-             />
-           //  }
+             if (resourceName == "project") {
+               <Project
+                 resource
+                 entityId
+                 urlStack=tail
+                 // ReasonReact.null
+               />;
+             } else {
+               <EntityView
+                 key={resource.name ++ "/" ++ entityId}
+                 resource
+                 entityId
+                 urlStack=tail
+               />;
+             }
            | None => str("Unknown resource: " ++ resourceName)
            };
          }}
