@@ -38,17 +38,8 @@ let make = () => {
 
   // Store (resources) state
 
-  let {resourceState, fetchResources, setResources}: Store.ResourceContext.t =
+  let {resourceState, fetchResources, getResource}: Store.ResourceContext.t =
     Store.ResourceContext.useResources();
-
-  let getResource = resourceName =>
-    switch (resourceState) {
-    | LoadSuccess(resources) =>
-      resources->Belt.Option.flatMap(rlist =>
-        rlist->Belt.Array.getBy(resource => resource.name == resourceName)
-      )
-    | _ => None
-    };
 
   // DOM methods
 
@@ -103,12 +94,21 @@ let make = () => {
            let foundResource = getResource(resourceName);
            switch (foundResource) {
            | Some(resource) =>
+             //  if (resourceName == "project") {
+             //    <Project
+             //      resource
+             //      entityId
+             //      urlStack=tail
+             //      // ReasonReact.null
+             //    />;
+             //  } else {
              <EntityView
                key={resource.name ++ "/" ++ entityId}
                resource
                entityId
                urlStack=tail
              />
+           //  }
            | None => str("Unknown resource: " ++ resourceName)
            };
          }}

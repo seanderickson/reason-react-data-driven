@@ -2,7 +2,7 @@
 
 open Belt;
 
-let debug_mode = true;
+let debug_mode = false;
 
 // Example of exhaustive typing...
 // type irb = {
@@ -98,6 +98,7 @@ and resources = array(resource);
 exception DecodeTypeException(string);
 
 module Decode = {
+  
   let readVocab = (json): vocabulary => {
     if (debug_mode) {
       Js.log2("decoding vocab: ", json);
@@ -179,6 +180,34 @@ module Decode = {
     resource.fields |> Array.getBy(_, field => field.name == fieldName);
   };
 
+  let fieldDecodeOpt = (json: Js.Json.t, schemaField: field): option(string) => {
+    if (debug_mode) {
+      Js.log4(
+        "decode data field: ",
+        schemaField.resource_name,
+        schemaField.name,
+        json,
+      );
+    };
+    Json.Decode.(
+      switch (schemaField.data_type) {
+      | String =>
+        json
+        |> optional(field(schemaField.name, string))
+      | Integer =>
+        json
+        |> optional(field(schemaField.name, int)) |> Belt.Option.map(_, string_of_int)
+      | ArrayString =>
+        json
+        |> optional(field(schemaField.name, array(string))) |> Belt.Option.map(_, Js.Array.joinWith(","))
+      | Boolean =>
+        json
+        |> optional(field(schemaField.name, bool)) |> Belt.Option.map(_, string_of_bool)
+      // | _ => raise(DecodeTypeException({j|unknown type for field: "$schemaField.name" - "$schemaField.data_type" |j}))
+      }
+    );
+  };
+
   let fieldDecoderExn = (json: Js.Json.t, schemaField: field): string => {
     if (debug_mode) {
       Js.log4(
@@ -220,7 +249,7 @@ module Decode = {
     );
   };
 
-  let fieldDecoder = (json, field: field): string =>
+  let fieldDecoder = (~json, ~field: field): string =>
     try (
       {
         fieldDecoderExn(json, field);
@@ -288,7 +317,6 @@ module ApiClient = {
                ),
              );
            } else {
-             Js.log("Status ok, decoding json...");
              response
              |> Fetch.Response.json
              |> then_(json => resolve(Result.Ok(decoder(json))));
@@ -434,7 +462,10 @@ module ApiClient = {
       Decode.nullDecoder,
       payload,
     );
-};
+}; // ApiClient
+
+
+// Resource Context
 
 type webLoadingData('a) =
   | NotAsked
@@ -442,14 +473,14 @@ type webLoadingData('a) =
   | LoadFailure(string)
   | LoadSuccess('a);
 
-type resourceState = webLoadingData(option(resources));
-let initialResourceState = NotAsked;
-
 module ResourceContext = {
+  type resourceState = webLoadingData(option(resources));
+  let initialResourceState = NotAsked;
+
   type t = {
     resourceState,
     fetchResources: unit => unit,
-    setResources: unit => unit,
+    getResource: string => option(resource),
   };
 
   let reactContext = React.createContext(None);
@@ -476,6 +507,15 @@ module ResourceContext = {
         |> ignore;
       };
 
+      let getResource = resourceName =>
+        switch (resourceState) {
+        | LoadSuccess(resources) =>
+          resources->Belt.Option.flatMap(rlist =>
+            rlist->Belt.Array.getBy(resource => resource.name == resourceName)
+          )
+        | _ => None
+        };
+
       React.useEffect1(
         () => {
           Js.log("Initial fetch...");
@@ -486,7 +526,7 @@ module ResourceContext = {
       );
 
       let ctx: option(t) =
-        Some({resourceState, fetchResources, setResources: () => ()})
+        Some({resourceState, fetchResources, getResource})
         |> (it => React.useMemo1(() => it, [|resourceState|]));
       // TODO: useMemo1 may require a shallow compare
       Common.reactContextProvider(
