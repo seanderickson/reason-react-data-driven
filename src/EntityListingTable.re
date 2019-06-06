@@ -3,13 +3,13 @@ open Common;
 open Store;
 
 type state = webLoadingData(option(array(Js.Json.t)));
-let initialState = NotAsked;
 
 [@react.component]
-let make = (~resource: resource) => {
+let make = (~resource: resource, ~initialState=NotAsked, ()) => {
   let (state, setState) = React.useState(() => initialState);
 
   let fetchEntities = () => {
+    Js.log("fetchEntities...")
     setState(_ => Loading);
     ApiClient.getEntityListing(resource.name)
     |> Js.Promise.then_(result => {
@@ -24,7 +24,9 @@ let make = (~resource: resource) => {
 
   React.useEffect1(
     () => {
-      fetchEntities();
+      if (state==NotAsked){
+        fetchEntities();
+      }
       Some(() => Js.log("cleanup Effect"));
     },
     [|resource.name|],
@@ -92,7 +94,9 @@ let make = (~resource: resource) => {
       {str("Fetch: " ++ resource.title)}
     </button>
     <br />
-    {switch (state) {
+    {
+      // TODO: move the entity fetch logic out of this component
+      switch (state) {
      | NotAsked => str("Not asked...")
      | LoadFailure(msg) => str("Load failure: " ++ msg)
      | Loading => str("Loading...")
