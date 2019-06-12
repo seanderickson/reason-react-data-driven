@@ -94,8 +94,8 @@
     { "resource_name": "project", "name": "comments", "title": "Comments", "description": "Comments", "data_type": "string", "display_type": "string" },
     
     { "resource_name": "experiment", "name": "id", "title": "Experiment ID", "description": "Experiment ID", "data_type": "integer", "display_type": "integer", "ref_endpoint": "experiment", "editable": false },
-    { "resource_name": "experiment", "name": "number", "title": "Experiment Number", "description": "Experiment Number", "data_type": "integer", "display_type": "string" },
-    { "resource_name": "experiment", "name": "project_id", "title": "Project ID", "description": "Project ID", "data_type": "integer", "display_type": "string", "ref_endpoint": "project" },
+    { "resource_name": "experiment", "name": "number", "title": "Experiment Number", "description": "Experiment Number", "data_type": "integer", "display_type": "string", "editable": false },
+    { "resource_name": "experiment", "name": "project_id", "title": "Project ID", "description": "Project ID", "data_type": "integer", "display_type": "string", "ref_endpoint": "project", "editable": false },
     { "resource_name": "experiment", "name": "date_initiated", "title": "Date Initiated", "description": "Date Initiated", "data_type": "string", "display_type": "date" },
     
     { "resource_name": "sample", "name": "slide_id", "title": "Slide ID", "description": "Slide ID", "data_type": "string", "display_type": "string" },
