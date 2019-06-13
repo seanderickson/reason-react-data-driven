@@ -1,11 +1,12 @@
 open Belt;
 open Common;
+open Metadata;
 open Store;
 
 [@react.component]
 let make =
     (
-      ~resource: resource,
+      ~resource: Resource.t,
       ~entityId: string,
       ~urlStack: list(string),
       ~initialState=NotAsked,
@@ -15,7 +16,7 @@ let make =
   let (entityState: webLoadingData(Js.Json.t), setEntityState) =
     React.useState(() => initialState);
 
-  let fetchEntity = (resource, id) => {
+  let fetchEntity = (resource:Resource.t, id) => {
     Js.log("fetch entity...");
     setEntityState(_ => Loading);
     ApiClient.getEntity(resource.name, id)

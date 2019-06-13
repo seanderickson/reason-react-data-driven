@@ -1,5 +1,6 @@
 open Belt;
 open Common;
+open Metadata;
 open Store;
 
 [@react.component]
@@ -43,7 +44,7 @@ let make = () => {
 
   // DOM methods
 
-  let printResourceMenu = resources => {
+  let printResourceMenu = (resources:Resource.resources) => {
     let testUrl = (url: ReasonReact.Router.url, test) =>
       switch (url.path) {
       | [testval, ..._] => testval == test
@@ -95,11 +96,11 @@ let make = () => {
            switch (foundResource) {
            | Some(resource) =>
              if (resourceName == "project") {
-               <Project
+               <ProjectView
                  resource
-                 entityId
+                 projectId=entityId
                  urlStack=tail
-                 // ReasonReact.null
+                 dispatchModal
                />;
              } else {
                <EntityView

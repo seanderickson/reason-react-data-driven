@@ -1,11 +1,13 @@
 open Belt;
 open Common;
+open Metadata;
 open Store;
 
 type state = webLoadingData(option(array(Js.Json.t)));
+// let initial:state = NotAsked;
 
 [@react.component]
-let make = (~resource: resource, ~initialState=NotAsked, ()) => {
+let make = (~resource: Resource.t, ~initialState=NotAsked, ()) => {
   let (state, setState) = React.useState(() => initialState);
 
   let fetchEntities = () => {
@@ -40,7 +42,7 @@ let make = (~resource: resource, ~initialState=NotAsked, ()) => {
   let printEntities = entities => {
     <div>
       <h3 className="shadow">
-        {str("Entity Listing: " ++ resource.title)}
+        {str(resource.title ++ " listing")}
       </h3>
       <table
         className="table-fixed min-w-full border-separate" id="entity_table">
@@ -66,7 +68,7 @@ let make = (~resource: resource, ~initialState=NotAsked, ()) => {
                         field => {
                           // let fvalue = fieldReader(field.name);
                           let fvalue =
-                            Store.Decode.fieldDecoder(entity, field);
+                            Metadata.fieldDecoder(entity, field);
                           <td key={field.name} className="text-left">
                             {switch (field.ref_endpoint) {
                              | Some(endpoint) =>

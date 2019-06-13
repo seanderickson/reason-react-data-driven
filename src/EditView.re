@@ -1,6 +1,10 @@
 open Belt;
 open Common;
-open Store;
+open Metadata;
+// open Store;
+[%bs.raw
+  {|require('../node_modules/react-datepicker/dist/react-datepicker.css')|}
+];
 
 type editState('a) =
   | Edit('a)
@@ -14,7 +18,8 @@ type state = editState(Js.Json.t);
 
 let getValue = event => ReactEvent.Form.target(event)##value;
 
-let validateField = (field: field, value: string): option(Js.Dict.t(string)) => {
+let validateField =
+    (field: Field.t, value: string): option(Js.Dict.t(string)) => {
   switch (field.validators) {
   | Some(validators) =>
     let errors: Js.Dict.t(string) = Js.Dict.empty();
@@ -59,13 +64,14 @@ let validateField = (field: field, value: string): option(Js.Dict.t(string)) => 
 };
 
 let validateEntity =
-    (resource, updatedEntity): option(Js.Dict.t(Js.Dict.t(string))) => {
+    (resource: Resource.t, updatedEntity)
+    : option(Js.Dict.t(Js.Dict.t(string))) => {
   let errors: Js.Dict.t(Js.Dict.t(string)) = Js.Dict.empty();
 
   Belt.Array.forEach(resource.fields, field =>
     switch (Js.Dict.get(updatedEntity, field.name)) {
     | Some(value) =>
-      let rawVal = Store.Decode.singleFieldDecode(value, field);
+      let rawVal = Metadata.singleFieldDecode(value, field);
       switch (validateField(field, rawVal)) {
       | Some(fieldErrorDict) =>
         Js.Dict.set(errors, field.name, fieldErrorDict)
@@ -83,14 +89,21 @@ let validateEntity =
 
 [@react.component]
 let make =
-    (~resource: resource, ~id: string, ~entity: Js.Json.t, ~refreshAction) => {
+    (
+      ~resource: Resource.t,
+      ~id: string,
+      ~entity: Js.Json.t,
+      ~refreshAction,
+      ~isNew=false,
+      ~saveAction=?,
+    ) => {
   let (state, setState) = React.useState(() => Edit(entity));
 
   // Store the initial entity for detection of user updates:
-  // - decodeObject creates a Js.Dict(Js.Json.t)
+  // - Note: decodeObject creates a Js.Dict(Js.Json.t)
   let initialEntity = entity |> Js.Json.decodeObject |> Belt.Option.getExn;
 
-  let getInitialFieldValue = (field: field): option(Js.Json.t) =>
+  let getInitialFieldValue = (field: Field.t): option(Js.Json.t) =>
     Js.Dict.get(initialEntity, field.name);
 
   // Track the current entity state:
@@ -110,14 +123,14 @@ let make =
       currentCopy;
     };
 
-  let getCurrentFieldValue = (field: field): option(Js.Json.t) =>
+  let getCurrentFieldValue = (field: Field.t): option(Js.Json.t) =>
     Js.Dict.get(getUpdatedEntity(), field.name);
 
-  let isFieldModified = (field: field) =>
+  let isFieldModified = (field: Field.t) =>
     getCurrentFieldValue(field) != getInitialFieldValue(field);
 
-  let updateField = (field: field, event) => {
-    let value = event->getValue;
+  let updateField = (field: Field.t, value) => {
+    Js.log3("updateField", field.name, value);
 
     let updatedEntity = getUpdatedEntity();
 
@@ -133,7 +146,7 @@ let make =
         Js.Dict.set(
           updatedEntity,
           field.name,
-          Store.Encode.encodeField(field, value),
+          Encode.encodeField(field, value),
         );
         switch (validateEntity(resource, updatedEntity)) {
         | Some(reportedErrors) =>
@@ -163,7 +176,7 @@ let make =
     };
   };
 
-  let getFieldError = (field: field): option(string) =>
+  let getFieldError = (field: Field.t): option(string) =>
     switch (state) {
     | SaveFail(_, optErrMsg, optCurrErrs) =>
       switch (optCurrErrs) {
@@ -194,19 +207,20 @@ let make =
     | _ => None
     };
 
-  let getHtmlFieldType = field =>
-    switch (field.data_type) {
+  let getHtmlFieldType = (f: Field.t) =>
+    switch (f.data_type) {
     | String => "text"
     | Integer => "number"
     | _ => "text"
     };
 
-  let printRow = (field: field) => {
-    let value =
-      Belt.Option.mapWithDefault(getCurrentFieldValue(field), "", jsonValue =>
-        Store.Decode.singleFieldDecode(jsonValue, field)
+  let printRow = (field: Field.t) => {
+    let fieldJsonValue = getCurrentFieldValue(field);
+    let fieldStringValue =
+      Belt.Option.mapWithDefault(fieldJsonValue, "", jsonValue =>
+        Metadata.singleFieldDecode(jsonValue, field)
       );
-
+    Js.log4("printRow", field.name, "value", fieldJsonValue);
     <div key={"row-field-" ++ field.name} className="detail_table_row">
       <div className="md:text-right">
         <label
@@ -224,8 +238,8 @@ let make =
            <select
              className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight"
              id={"inline-" ++ field.name}
-             onChange={updateField(field)}
-             value>
+             onChange={evt => evt |> getValue |> updateField(field)}
+             value=fieldStringValue>
              {Belt.Option.getExn(field.vocabularies)
               |> Array.map(_, v =>
                    <option key={v.key} value={v.key}> {str(v.title)} </option>
@@ -234,16 +248,54 @@ let make =
            </select>;
          } else
            {
-             <input
-               className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight"
-               id={"inline-" ++ field.name}
-               type_={getHtmlFieldType(field)}
-               value
-               onChange={updateField(field)}
-             />;
+             switch (field.display_type) {
+             | "date" =>
+               //NOTE: Date conversion is performed only on edit; otherwise dates are treated as strings.
+               let dateValue =
+                 Belt.Option.mapWithDefault(
+                   fieldJsonValue, Js.Date.make(), jsonValue =>
+                   Metadata.singleFieldDecode(jsonValue, field)
+                   |> Js.Date.fromString
+                 );
+               // Note: Date.parse may produce an "Invalid Date"; detect this as DatePicker will error
+               if (!isJsDateValid(dateValue)) {
+                 <div>
+                   <DatePicker
+                     className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight"
+                     //  id={"inline-" ++ field.name}
+                     dateFormat="yyyy-MM-dd"
+                     selected={Js.Date.make()}
+                     onChange={obj => obj |> formatDate |> updateField(field)}
+                   />
+                   <span className="text-red">
+                     {str("Invalid date from server: " ++ fieldStringValue)}
+                   </span>
+                 </div>;
+               } else {
+                 <DatePicker
+                   //  id={"inline-" ++ field.name}
+                   className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight"
+                   dateFormat="yyyy-MM-dd"
+                   selected=dateValue
+                   onChange={obj => obj |> formatDate |> updateField(field)}
+                 />;
+               };
+             | _ =>
+               <input
+                 className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight"
+                 id={"inline-" ++ field.name}
+                 type_={getHtmlFieldType(field)}
+                 value=fieldStringValue
+                 onChange={evt => evt |> getValue |> updateField(field)}
+               />
+             };
            };
            // </div>
        } else {
+         let value =
+           Belt.Option.mapWithDefault(fieldJsonValue, "", jsonValue =>
+             Metadata.singleFieldDecode(jsonValue, field)
+           );
          <div id={"inline-" ++ field.name} type_={getHtmlFieldType(field)}>
            {str(value)}
          </div>;
@@ -273,57 +325,69 @@ let make =
 
     Js.log("Save entity...");
 
-    ApiClient.patchEntity(resource.name, id, currentEntity)
-    |> Js.Promise.then_(result => {
-         switch (result) {
-         | Result.Ok(entity) =>
-           Js.log2("Save success: ", entity);
-           setState(_ => SaveSuccess(entity));
-         | Result.Error(message) =>
-           // Decode a dict(dict(string))
-           try (
-             {
-               let errors: Js.Dict.t(Js.Dict.t(string)) = Js.Dict.empty();
+    let processResult = result =>
+      switch (result) {
+      | Result.Ok(entity) =>
+        Js.log2("Save success: ", entity);
+        switch (saveAction) {
+        | Some(action) => action()
+        | None => setState(_ => SaveSuccess(entity))
+        };
 
-               Js.Json.decodeObject(Json.parseOrRaise(message))
-               |> Belt.Option.getExn
-               |> Js.Dict.entries
-               |> Array.forEach(_, ((key, v)) =>
-                    Js.Dict.set(errors, key, v |> Json.Decode.(dict(string)))
-                  );
+      | Result.Error(message) =>
+        // Decode a dict(dict(string))
+        try (
+          {
+            let errors: Js.Dict.t(Js.Dict.t(string)) = Js.Dict.empty();
 
-               setState(_ => SaveFail(currentEntity, None, Some(errors)));
-             }
-           ) {
-           | x =>
-             Js.log3(
-               "SaveFail: err msg decode failure for msg: ",
-               x,
-               message,
-             );
-             setState(_ =>
-               SaveFail(
-                 currentEntity,
-                 Some({j|Failure on error decode: $message|j}),
-                 None,
-               )
-             );
-           // // Decode the message? (or should be already decoded)
-           // let errors: Js.Dict.t(Js.Dict.t(string)) = Js.Dict.empty();
-           // Js.log2("Err response: ", message);
-           // setState(_=> SaveFail(currentEntity, None, Some(errors)));
-           }
-         };
-         Js.Promise.resolve();
-       })
-    |> ignore;
+            Js.Json.decodeObject(Json.parseOrRaise(message))
+            |> Belt.Option.getExn
+            |> Js.Dict.entries
+            |> Array.forEach(_, ((key, v)) =>
+                 Js.Dict.set(errors, key, v |> Json.Decode.(dict(string)))
+               );
+
+            setState(_ => SaveFail(currentEntity, None, Some(errors)));
+          }
+        ) {
+        | x =>
+          Js.log3("SaveFail: err msg decode failure for msg: ", x, message);
+          setState(_ =>
+            SaveFail(
+              currentEntity,
+              Some({j|Failure on error decode: $message|j}),
+              None,
+            )
+          );
+        // // Decode the message? (or should be already decoded)
+        // let errors: Js.Dict.t(Js.Dict.t(string)) = Js.Dict.empty();
+        // Js.log2("Err response: ", message);
+        // setState(_=> SaveFail(currentEntity, None, Some(errors)));
+        }
+      };
+
+    if (isNew) {
+      ApiClient.postEntity(resource.name, currentEntity)
+      |> Js.Promise.then_(result => {
+           processResult(result);
+           Js.Promise.resolve();
+         })
+      |> ignore;
+    } else {
+      ApiClient.patchEntity(resource.name, id, currentEntity)
+      |> Js.Promise.then_(result => {
+           processResult(result);
+           Js.Promise.resolve();
+         })
+      |> ignore;
+    };
   };
 
   let printErrors = () =>
     <div id="form-errors" className="box-shadow border-red text-red">
       {switch (state) {
        | SaveFail(_, optErrMsg, _) =>
-         {str("Form Errors!")};
+         str("Form Errors!");
          switch (optErrMsg) {
          | Some(errMsg) => <div className="text-purple"> {str(errMsg)} </div>
          | None => ReasonReact.null

@@ -28,7 +28,6 @@ module.exports = {
     rules: [
       {
         test: /\.css$/, // Only .css files
-        exclude: /node_modules/,
         use: [
           {
             loader: 'style-loader',

@@ -1,12 +1,13 @@
 open Belt;
 open Common;
+open Metadata;
 open Store;
 
 
 [@react.component]
-let make = (~resource: resource, ~id: string, ~entity: Js.Json.t, ()) => {
+let make = (~resource: Resource.t, ~id: string, ~entity: Js.Json.t, ()) => {
 
-  let printRow = (field: field, rvalue) => {
+  let printRow = (field: Field.t, rvalue) => {
     <div key={"row-field-" ++ field.name} className="detail_table_row">
       <label
         className="font-bold text-right" htmlFor={"inline-" ++ field.name}>
@@ -25,7 +26,7 @@ let make = (~resource: resource, ~id: string, ~entity: Js.Json.t, ()) => {
        |> Array.map(
             _,
             field => {
-              let fvalue = Store.Decode.fieldDecoder(entity, field);
+              let fvalue = Metadata.fieldDecoder(entity, field);
               printRow(
                 field,
                 switch (field.ref_endpoint) {
