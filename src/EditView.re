@@ -267,9 +267,9 @@ let make =
                      selected={Js.Date.make()}
                      onChange={obj => obj |> formatDate |> updateField(field)}
                    />
-                   <span className="text-red">
+                   <div className="text-red">
                      {str("Invalid date from server: " ++ fieldStringValue)}
-                   </span>
+                   </div>
                  </div>;
                } else {
                  <DatePicker
