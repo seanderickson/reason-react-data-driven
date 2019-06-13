@@ -400,30 +400,38 @@ let make =
   switch (state) {
   | SaveFail(_, optErrMsg, _) =>
     <div id="entity">
-      <button
-        style={ReactDOMRe.Style.make(~display="none", ())} onClick={_ => ()}>
-        {str("Save")}
-      </button>
-      <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+      <h3>
+        <button
+          style={ReactDOMRe.Style.make(~display="none", ())}
+          onClick={_ => ()}>
+          {str("Save")}
+        </button>
+        <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+      </h3>
       <h3 className="shadow"> {str("Edit entity: " ++ resource.title)} </h3>
       {printErrors()}
       {printEntity()}
     </div>
   | Invalid(_, _) =>
     <div id="entity">
-      <button
-        style={ReactDOMRe.Style.make(~display="none", ())} onClick={_ => ()}>
-        {str("Save")}
-      </button>
-      <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+      <h3>
+        <button
+          style={ReactDOMRe.Style.make(~display="none", ())}
+          onClick={_ => ()}>
+          {str("Save")}
+        </button>
+        <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+      </h3>
       <h3 className="shadow"> {str("Edit entity: " ++ resource.title)} </h3>
       {printErrors()}
       {printEntity()}
     </div>
   | Modified(currentEntity) =>
     <div id="entity">
-      <button onClick={save(currentEntity)}> {str("Save")} </button>
-      <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+      <h3>
+        <button onClick={save(currentEntity)}> {str("Save")} </button>
+        <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+      </h3>
       <h3 className="shadow">
         {str("Edit entity: " ++ resource.title ++ "/" ++ id)}
       </h3>
@@ -435,12 +443,14 @@ let make =
       // Note: keep the node, with style change, so that DOM update is avoided
       // - otherwise mouse focus is lost when the button appears (on Chrome 74.0)
 
-        <button
-          style={ReactDOMRe.Style.make(~display="none", ())}
-          onClick={_ => ()}>
-          {str("Save")}
-        </button>
-        <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+        <h3>
+          <button
+            style={ReactDOMRe.Style.make(~display="none", ())}
+            onClick={_ => ()}>
+            {str("Save")}
+          </button>
+          <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+        </h3>
         <h3 className="shadow">
           {str("Edit entity: " ++ resource.title ++ "/" ++ id)}
         </h3>

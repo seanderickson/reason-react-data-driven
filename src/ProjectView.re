@@ -4,7 +4,7 @@ open Store;
 open Metadata;
 open EntityModules;
 
-type newState =
+type addState  =
   | Add(string, Js.Json.t)
   | View;
 
@@ -25,7 +25,7 @@ let make =
 
   let (experimentState, setExperimentState) = React.useState(() => NotAsked);
 
-  let (expState, setExpState) = React.useState(() => View);
+  let (addState, setAddState) = React.useState(() => View);
 
   let addExperiment = currentExperiments => {
     let defaults: Js.Dict.t(Js.Json.t) = Js.Dict.empty();
@@ -77,7 +77,7 @@ let make =
 
     // TODO: set the current date
 
-    setExpState(_ => Add(string_of_int(newId), defaults |> Js.Json.object_));
+    setAddState(_ => Add(string_of_int(newId), defaults |> Js.Json.object_));
   };
 
   let fetchExperiments = () => {
@@ -137,58 +137,58 @@ let make =
         entityId=projectId
         urlStack
         initialState={LoadSuccess(entity)}
-        refreshAction={_=>{
-          setExpState(_=>View);
+        refreshAction={_ => {
+          setAddState(_ => View);
           fetchProject(projectId);
-        }}
-      >
-      <h3> {str("Experiments")} </h3>
-      {switch (expState) {
-       | View =>
-         switch (experimentState) {
-         | NotAsked => str("Not asked...")
-         | LoadFailure(msg) => str("Load failure: " ++ msg)
-         | Loading => str("Loading experiments...")
-         | LoadSuccess(entities) =>
-           // FIXME: Add button should not show if the project is being edited
-           <div>
-             <button onClick={_ => addExperiment(entities)}>
-               {str("Add")}
-             </button>
-             <EntityListingTable
-               resource=experimentResource
-               initialState={
-                 LoadSuccess(
-                   Experiment.filterExperiments(
-                     projectId |> int_of_string,
-                     entities,
-                   ),
-                 )
-               }
-             />
-           </div>
-         }
-       | Add(newId, newEntity) =>
-         <EditView
-           key={experimentResource.name ++ "-edit-" ++ projectId}
-           resource=experimentResource
-           id=newId
-           entity=newEntity
-           isNew=true
-           refreshAction={_ => {
-             setExpState(_ => View);
-             fetchProject(projectId);
-           }}
-           saveAction={_ => {
-             setExpState(_ => View);
-             fetchProject(projectId);
-             dispatchModal(
-               Show("Experiment saved: " ++ newId, _ => (), _ => ()),
-             );
-           }}
-         />
-       }}
-       </EntityView>
+        }}>
+        {switch (addState) {
+         | View =>
+           switch (experimentState) {
+           | NotAsked => str("Not asked...")
+           | LoadFailure(msg) => str("Load failure: " ++ msg)
+           | Loading => str("Loading experiments...")
+           | LoadSuccess(entities) =>
+             // FIXME: Add button should not show if the project is being edited
+             <div>
+               <h3>
+                 <button onClick={_ => addExperiment(entities)}>
+                   {str("Add experiment")}
+                 </button>
+               </h3>
+               <EntityListingTable
+                 resource=experimentResource
+                 initialState={
+                   LoadSuccess(
+                     Experiment.filterExperiments(
+                       projectId |> int_of_string,
+                       entities,
+                     ),
+                   )
+                 }
+               />
+             </div>
+           }
+         | Add(newId, newEntity) =>
+           <EditView
+             key={experimentResource.name ++ "-edit-" ++ projectId}
+             resource=experimentResource
+             id=newId
+             entity=newEntity
+             isNew=true
+             refreshAction={_ => {
+               setAddState(_ => View);
+               fetchProject(projectId);
+             }}
+             saveAction={_ => {
+               setAddState(_ => View);
+               fetchProject(projectId);
+               dispatchModal(
+                 Show("Experiment saved: " ++ newId, _ => (), _ => ()),
+               );
+             }}
+           />
+         }}
+      </EntityView>
     </div>;
   };
 };

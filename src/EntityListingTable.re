@@ -92,10 +92,10 @@ let make = (~resource: Resource.t, ~initialState=NotAsked, ()) => {
   };
 
   <div id="entities">
-    <button onClick={_ => fetchEntities()}>
-      {str("Fetch: " ++ resource.title)}
-    </button>
-    <br />
+    // <button onClick={_ => fetchEntities()}>
+    //   {str("Fetch: " ++ resource.title)}
+    // </button>
+    // <br />
     {
       // TODO: move the entity fetch logic out of this component
       switch (state) {

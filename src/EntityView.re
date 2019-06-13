@@ -73,14 +73,16 @@ let make =
       />
     | View =>
       <div>
-        <button
-          onClick={_ =>
-            // ReasonReactRouter.push(
-            //   "/" ++ resource.name ++ "/" ++ entityId ++ "/edit",
-            // );
-            setEditState(_ => Edit)}>
-          {str("Edit: " ++ resource.title ++ "/" ++ entityId)}
-        </button>
+        <h3>
+          <button
+            onClick={_ =>
+              // ReasonReactRouter.push(
+              //   "/" ++ resource.name ++ "/" ++ entityId ++ "/edit",
+              // );
+              setEditState(_ => Edit)}>
+            {str("Edit: " ++ resource.title ++ "/" ++ entityId)}
+          </button>
+        </h3>
         <DetailView
           key={resource.name ++ "-detail-" ++ entityId}
           resource
