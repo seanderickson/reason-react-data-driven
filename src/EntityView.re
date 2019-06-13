@@ -3,6 +3,10 @@ open Common;
 open Metadata;
 open Store;
 
+type editState =
+  | Edit
+  | View;
+
 [@react.component]
 let make =
     (
@@ -10,13 +14,18 @@ let make =
       ~entityId: string,
       ~urlStack: list(string),
       ~initialState=NotAsked,
+      ~refreshAction=_ => (),
+      ~children=ReasonReact.null,
     ) => {
   // Entity state
+
   Js.log3("initialState", entityId, initialState);
   let (entityState: webLoadingData(Js.Json.t), setEntityState) =
     React.useState(() => initialState);
 
-  let fetchEntity = (resource:Resource.t, id) => {
+  let (editState, setEditState) = React.useState(() => View);
+
+  let fetchEntity = (resource: Resource.t, id) => {
     Js.log("fetch entity...");
     setEntityState(_ => Loading);
     ApiClient.getEntity(resource.name, id)
@@ -45,39 +54,83 @@ let make =
   );
 
   let showEntity = entity => {
-    switch (urlStack) {
-    | ["edit"] =>
+    switch (editState) {
+    | Edit =>
       <EditView
         key={resource.name ++ "-edit-" ++ entityId}
         resource
         id=entityId
         entity
-        refreshAction={_ =>
+        refreshAction={_ => {
           // Note: pushing a route alone will not remount this component and
           // reset the state; but it will set a new urlStack prop. Therefore,
           // useEffect is used to fetch when either the component is mounted,
           // or when the urlStack prop is updated.
-          ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ entityId)}
+          // ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ entityId)
+          setEditState(_ => View);
+          refreshAction();
+        }}
       />
-    | _ =>
+    | View =>
       <div>
         <button
           onClick={_ =>
-            ReasonReactRouter.push(
-              "/" ++ resource.name ++ "/" ++ entityId ++ "/edit",
-            )
-          }>
+            // ReasonReactRouter.push(
+            //   "/" ++ resource.name ++ "/" ++ entityId ++ "/edit",
+            // );
+            setEditState(_ => Edit)}>
           {str("Edit: " ++ resource.title ++ "/" ++ entityId)}
         </button>
         <DetailView
           key={resource.name ++ "-detail-" ++ entityId}
           resource
           id=entityId
-          entity
-        />
+          entity>
+          children
+        </DetailView>
       </div>
     };
   };
+
+  // let showEntity = entity => {
+  //   switch (urlStack) {
+  //   | ["edit"] =>
+  //     <EditView
+  //       key={resource.name ++ "-edit-" ++ entityId}
+  //       resource
+  //       id=entityId
+  //       entity
+  //       refreshAction={_ =>{
+  //         // Note: pushing a route alone will not remount this component and
+  //         // reset the state; but it will set a new urlStack prop. Therefore,
+  //         // useEffect is used to fetch when either the component is mounted,
+  //         // or when the urlStack prop is updated.
+  //         ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ entityId);
+  //         // Js.log2("EntityView: refreshAction");
+  //         // refreshAction();
+  //         }}
+  //     />
+  //   | _ =>
+  //     <div>
+  //       <button
+  //         onClick={_ =>
+  //           ReasonReactRouter.push(
+  //             "/" ++ resource.name ++ "/" ++ entityId ++ "/edit",
+  //           )
+  //         }>
+  //         {str("Edit: " ++ resource.title ++ "/" ++ entityId)}
+  //       </button>
+  //       <DetailView
+  //         key={resource.name ++ "-detail-" ++ entityId}
+  //         resource
+  //         id=entityId
+  //         entity
+  //       >
+  //       children
+  //       </DetailView>
+  //     </div>
+  //   };
+  // };
 
   switch (entityState) {
   | NotAsked => str("Not asked...")

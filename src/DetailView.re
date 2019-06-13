@@ -5,7 +5,7 @@ open Store;
 
 
 [@react.component]
-let make = (~resource: Resource.t, ~id: string, ~entity: Js.Json.t, ()) => {
+let make = (~resource: Resource.t, ~id: string, ~entity: Js.Json.t, ~children=ReasonReact.null, ()) => {
 
   let printRow = (field: Field.t, rvalue) => {
     <div key={"row-field-" ++ field.name} className="detail_table_row">
@@ -41,5 +41,6 @@ let make = (~resource: Resource.t, ~id: string, ~entity: Js.Json.t, ()) => {
           )
        |> ReasonReact.array}
     </div>
+    children
   </div>;
 };

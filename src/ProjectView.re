@@ -137,7 +137,11 @@ let make =
         entityId=projectId
         urlStack
         initialState={LoadSuccess(entity)}
-      />
+        refreshAction={_=>{
+          setExpState(_=>View);
+          fetchProject(projectId);
+        }}
+      >
       <h3> {str("Experiments")} </h3>
       {switch (expState) {
        | View =>
@@ -184,6 +188,7 @@ let make =
            }}
          />
        }}
+       </EntityView>
     </div>;
   };
 };
