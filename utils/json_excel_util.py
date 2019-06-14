@@ -73,6 +73,11 @@ def from_json(input_file, output_filename):
       fields[resource_name] = OrderedDict()
     fields[resource_name][field['name']] = field
 
+  # Order resources
+  if 'resource' not in input_data:
+    raise Exception('Required "resource" element not found')
+  sorted_resources = sorted([(r['id'],r['name']) for r in input_data['resource']])
+
   logger.info('field resources: %r, %d', fields.keys(), len(fields) )
   logger.info('field fields: %r', fields['field'].keys())
 
@@ -111,14 +116,14 @@ def from_json(input_file, output_filename):
       sheet.write_row(current_row,0,row)
       current_row += 1
 
-  # Other entries are just resource data to be written
-
-  for resource_name, list_data in input_data.items():
+  # Other entries are resource data to be written
+  for id,resource_name in sorted_resources:
     if resource_name == 'field':
       continue
     if resource_name not in fields:
       logger.warn('resource has no field definitions: %r', resource_name)
       continue
+    list_data = input_data[resource_name]
     
     sheet = wb.add_worksheet(resource_name)
     field_names = fields[resource_name].keys()
@@ -269,7 +274,7 @@ def from_xlsx(input_file, output_filename):
       return val
     return val.split(";")
     
-  def parse_intstring(v):
+  def parse_arrayint(v):
     val = parse_arraystring(v)
     if val is None:
       return val
@@ -337,14 +342,26 @@ def from_xlsx(input_file, output_filename):
       'parser': parse_string,
       'default': None,
       'required': False
-    }
+    },
+    'detail_ordinal': {
+      'data_type': 'integer',
+      'parser': parse_int,
+      'default': None,
+      'required': False
+    },
+    'list_ordinal': {
+      'data_type': 'integer',
+      'parser': parse_int,
+      'default': None,
+      'required': False
+    },
   }
   parsers_by_data_type = {
     'string': parse_string,
     'integer': parse_int,
     'boolean': parse_boolean,
     'arraystring': parse_arraystring,
-    'intstring': parse_intstring,
+    'arrayint': parse_arrayint,
   }
 
   def field_decode(field_schema, v):
@@ -412,10 +429,31 @@ def from_xlsx(input_file, output_filename):
         parsed_row[field_name] = parser(raw_val)
     unspooled_data[resource_name] = parsed_rows
 
+  # Use ordinals to order the data
+  ordered_data = OrderedDict()
+
+  resources = sorted([(d['id'],d['name']) for d in unspooled_data['resource']])
+  for id,resource in resources:
+    rows = []
+    ordered_data[resource] = rows
+
+    fields = resource_field_dict[resource]
+    fields_sorted = sorted((f['list_ordinal'],f['name']) for f in fields.values() )
+    
+    rows_of_dicts = unspooled_data.get(resource)
+    if rows_of_dicts:
+      for old_row in rows_of_dicts:
+        new_row = OrderedDict()
+        for ord,name in fields_sorted:
+          new_row[name] = old_row.get(name)
+        rows.append(new_row)
+
   # Write out parsed Excel data to JSON
 
   with open(output_filename, 'w') as of:
-    of.write(json.dumps(unspooled_data, indent=2))
+    of.write(json.dumps(ordered_data, indent=2))
+  # with open(output_filename, 'w') as of:
+  #   of.write(json.dumps(unspooled_data, indent=2))
 
   logger.info('wrote: %r', output_filename)
 
