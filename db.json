@@ -1,187 +1,1353 @@
 {
-  "vocabulary": [
-    { "scope": "channel.filter", "key": "dapi", "title": "DAPI" },
-    { "scope": "channel.filter", "key": "fitc", "title": "FITC" },
-    { "scope": "channel.filter", "key": "cy3", "title": "CY3" },
-    { "scope": "channel.filter", "key": "uvdapi", "title": "U/V DAPI" },
-    { "scope": "channel.filter", "key": "dapiorange", "title": "DAPI/Orange" },
-    { "scope": "sample.organism", "key": "human", "title": "Human" },
-    { "scope": "sample.organism", "key": "mouse", "title": "Mouse" },
-    { "scope": "sample.organism", "key": "rabbit", "title": "Rabbit" },
-    { "scope": "sample.organism", "key": "zebrafish", "title": "Zebrafish" },
-    { "scope": "sample.organism", "key": "c_elegans", "title": "C. Elegans" },
-    { "scope": "sample.tissue", "key": "lung", "title": "lung" },
-    { "scope": "sample.tissue", "key": "skin", "title": "skin" },
-    { "scope": "sample.tissue", "key": "pancreas", "title": "Pancreas" },
-    { "scope": "sample.tissue", "key": "heart", "title": "Heart" },
-    { "scope": "irb.type", "key": "secondary", "title": "Secondary" },
-    { "scope": "irb.type", "key": "multi_center", "title": "Multi-Center" },
-    { "scope": "irb.type", "key": "expedited", "title": "Expedited" },
-    { "scope": "irb.type", "key": "non_exempt", "title": "Non-Exempt" },
-    { "scope": "irb.type", "key": "human_subjects", "title": "Human subjects" }
-  ],
   "resource": [
-    { "id": 1, "name": "resource", "title": "Resource", "description": "A Resource describes an entity in the project"},
-    { "id": 2, "name": "field", "title": "Field", "description": "A field describes a property of a Resource"},
-    { "id": 3, "name": "person", "title": "Person", "description": "A person involved with the project"},
-    { "id": 4, "name": "lab", "title": "Lab", "description": "Lab at HMS"},
-    { "id": 5, "name": "funding", "title": "Funding", "description": "Grant or source of funding"},
-    { "id": 6, "name": "irb", "title": "IRB", "description": "IRB" },
-    { "id": 7, "name": "sample", "title": "Sample", "description": "Sample or slide"},
-    { "id": 8, "name": "project", "title": "Project", "description": "Project to organize experiments"},
-    { "id": 9, "name": "experiment", "title": "Experiment", "description": "Experiment to track cycles"},
-    { "id": 10, "name": "cycle", "title": "Cycle", "description": "Record of one staining and imaging cycle with multiple channels"},
-    { "id": 11, "name": "microscope", "title": "Microscope", "description": "Microscope description with channels"},
-    { "id": 12, "name": "channel", "title": "Channel", "description": "A wavelength delimited channel measured from a sample by the microscope"}
-  ],
-  "field": [
-    { "resource_name": "resource", "name": "name", "title": "Name", "description": "Resource name", "data_type": "string", "display_type": "string", "editable": false },
-    { "resource_name": "resource", "name": "id", "title": "ID", "description": "Resource ID", "data_type": "integer", "display_type": "integer", "ref_endpoint": "resource", "editable": false },
-    { "resource_name": "resource", "name": "title", "title": "Title", "description": "Resource title", "data_type": "string", "display_type": "string", "validators": ["required"] },
-    { "resource_name": "resource", "name": "description", "title": "Description", "description": "Resource description", "data_type": "string", "display_type": "string", "validators": ["required"] },
-
-    { "resource_name": "field", "name": "name", "title": "Name", "description": "Field name", "data_type": "string", "display_type": "string", "editable": false },
-    { "resource_name": "field", "name": "resource_name", "title": "Resource Name", "description": "Field resource name", "data_type": "string", "display_type": "string", "editable": false },
-    { "resource_name": "field", "name": "title", "title": "Title", "description": "Title", "data_type": "string", "display_type": "string" },
-    { "resource_name": "field", "name": "description", "title": "Description", "description": "Field Description", "data_type": "string", "display_type": "string" },
-    { "resource_name": "field", "name": "data_type", "title": "Data Type", "description": "Data type used to serialize the field value", "data_type": "string", "display_type": "string" },
-    { "resource_name": "field", "name": "display_type", "title": "Display Type", "description": "Type information used for display of the field value", "data_type": "string", "display_type": "string" },
-    { "resource_name": "field", "name": "ref_endpoint", "title": "Ref Endpoint", "description": "Resource name that this field references (optional)", "data_type": "string", "display_type": "string" },
-    { "resource_name": "field", "name": "validators", "title": "Validators", "description": "Validators (optional)", "data_type": "arraystring", "display_type": "string" },
-    { "resource_name": "field", "name": "editable", "title": "Editable", "description": "Editable (optional default true)", "data_type": "boolean", "display_type": "boolean" },
-    { "resource_name": "field", "name": "vocab_scope", "title": "Vocabulary Scope", "description": "Scope specifier", "data_type": "string", "display_type": "string" },
-
-    { "resource_name": "person", "name": "id", "title": "ID", "description": "Person ID", "data_type": "integer", "display_type": "integer", "ref_endpoint": "person",
-      "editable": false },
-    { "resource_name": "person", "name": "first_name", "title": "First Name", "description": "First name", "data_type": "string", "display_type": "string",
-      "validators": ["required", "name"] },
-    { "resource_name": "person", "name": "last_name", "title": "Last Name", "description": "Last name", "data_type": "string", "display_type": "string",
-      "validators": ["required", "name"] },
-    { "resource_name": "person", "name": "lab_id", "title": "Lab ID", "description": "Lab ID the person belongs to", 
-      "data_type": "integer", "display_type": "integer", "ref_endpoint": "lab", "validators": ["required"] },
-
-    { "resource_name": "lab", "name": "id", "title": "ID", "description": "Lab ID", "data_type": "integer", "display_type": "integer", "ref_endpoint": "lab", "editable": false },
-    { "resource_name": "lab", "name": "name", "title": "Name", "description": "Name of the Lab", "data_type": "string", "display_type": "string" },
-    { "resource_name": "lab", "name": "lab_head_id", "title": "Lab Head ID", 
-      "description": "ID of the person leading the lab", "data_type": "integer", "display_type": "integer", "ref_endpoint": "person" },
-    
-    { "resource_name": "funding", "name": "id", "title": "ID", "description": "Funding ID", "data_type": "integer", "display_type": "integer", "ref_endpoint": "funding", "editable": false },
-    { "resource_name": "funding", "name": "name", "title": "Name", "description": "Name of the funding source", "data_type": "string", "display_type": "string" },
-   
-    { "resource_name": "irb", "name": "id", "title": "ID", "description": "IRB ID", "data_type": "integer", "display_type": "integer", "ref_endpoint": "irb", "editable": false },
-    { "resource_name": "irb", "name": "irb_id", "title": "IRB ID", "description": "IRB tracking id", "data_type": "string", "display_type": "string" },
-    { "resource_name": "irb", "name": "funding_ids", "title": "Funding", "description": "IRB Funding source ID", 
-      "data_type": "arraystring", "display_type": "list", "ref_endpoint": "funding" },
-    { "resource_name": "irb", "name": "type", "title": "Type", "description": "Type of IRB", "data_type": "string", "display_type": "vocabulary", "vocab_scope": "irb.type" },
-    { "resource_name": "irb", "name": "lab_id", "title": "Lab ID", "description": "Lab ID the IRB belongs to", "data_type": "integer", "display_type": "string" },
-    { "resource_name": "irb", "name": "secondary_irb_id", "title": "Secondary IRB ID", "description": "Secondary IRB", 
-      "data_type": "integer", "display_type": "integer", "ref_endpoint": "irb" },
-
-    { "resource_name": "project", "name": "id", "title": "Project ID", "description": "Project ID", "data_type": "integer", "display_type": "integer", "ref_endpoint": "project", "editable": false },
-    { "resource_name": "project", "name": "start_date", "title": "Start Date", "description": "Start Date", "data_type": "string", "display_type": "date" },
-    { "resource_name": "project", "name": "pi_id", "title": "Principal Investigator ID", "description": "Principal Investigator", "data_type": "integer", "display_type": "string", "ref_endpoint": "person" },
-    { "resource_name": "project", "name": "primary_irb_id", "title": "Primary IRB ID", "description": "Primary IRB ID", "data_type": "integer", "display_type": "string", "ref_endpoint": "irb" },
-    { "resource_name": "project", "name": "lsp_irb_id", "title": "LSP IRB ID", "description": "LSP IRB ID", "data_type": "integer", "display_type": "string", "ref_endpoint": "irb" },
-    { "resource_name": "project", "name": "protocol_io", "title": "Protocol.io", "description": "Protocol.io", "data_type": "string", "display_type": "string" },
-    { "resource_name": "project", "name": "scientist_samples", "title": "Scientist samples received from", "description": "Scientist samples received from", "data_type": "string", "display_type": "string" },
-    { "resource_name": "project", "name": "pathology_core", "title": "Pathology core", "description": "Pathology core", "data_type": "string", "display_type": "string" },
-    { "resource_name": "project", "name": "primary_contact", "title": "Co PI", "description": "Internal LSP coPI/Primary contact", "data_type": "string", "display_type": "string" },
-    { "resource_name": "project", "name": "grant", "title": "Grant", "description": "Grant", "data_type": "string", "display_type": "string" },
-    { "resource_name": "project", "name": "purpose", "title": "Purpose", "description": "Purpose", "data_type": "string", "display_type": "string" },
-    { "resource_name": "project", "name": "organism", "title": "Organism", "description": "Organism", "data_type": "string", "display_type": "string" },
-    { "resource_name": "project", "name": "sample_size", "title": "Sample Size", "description": "Sample Size", "data_type": "integer", "display_type": "integer" },
-    { "resource_name": "project", "name": "cycles", "title": "CyCIF cycles", "description": "CyCIF cycles", "data_type": "integer", "display_type": "integer" },
-    { "resource_name": "project", "name": "comments", "title": "Comments", "description": "Comments", "data_type": "string", "display_type": "string" },
-    
-    { "resource_name": "experiment", "name": "id", "title": "Experiment ID", "description": "Experiment ID", "data_type": "integer", "display_type": "integer", "ref_endpoint": "experiment", "editable": false },
-    { "resource_name": "experiment", "name": "number", "title": "Experiment Number", "description": "Experiment Number", "data_type": "integer", "display_type": "string", "editable": false },
-    { "resource_name": "experiment", "name": "project_id", "title": "Project ID", "description": "Project ID", "data_type": "integer", "display_type": "string", "ref_endpoint": "project", "editable": false },
-    { "resource_name": "experiment", "name": "date_initiated", "title": "Date Initiated", "description": "Date Initiated", "data_type": "string", "display_type": "date" },
-    
-    { "resource_name": "sample", "name": "slide_id", "title": "Slide ID", "description": "Slide ID", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "checkout_date", "title": "Checkout Date", "description": "Checkout Date", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "inventory_date", "title": "Inventory Date", "description": "Inventory Date", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "project_number", "title": "Project Number", "description": "Project number", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "study_name", "title": "Study Name", "description": "Study Name", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "collaborator_name", "title": "Collaborator Name", "description": "Collaborator Name", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "assigned_to", "title": "Assigned To", "description": "Assigned To", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "primary_irb", "title": "Primary IRB", "description": "Primary IRB", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "secondary_irb", "title": "Secondary IRB", "description": "Secondary IRB", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "leica_barcode", "title": "Leica Barcode", "description": "Leica Barcode", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "organism", "title": "Organism", "description": "Organism", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "tissue", "title": "Tissue", "description": "Tissue", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "pathology", "title": "Pathology", "description": "Pathology", "data_type": "string", "display_type": "string" },
-    { "resource_name": "sample", "name": "stain_type", "title": "Stain Type", "description": "Stain Type", "data_type": "string", "display_type": "string" }
-],
-  "lab": [  
-    { "id": 1, "name": "Sorger", "lab_head_id": 8 },
-    { "id": 2, "name": "Santagata", "lab_head_id": 9 },
-    { "id": 3, "name": "LeBoeuf", "lab_head_id": 10 },
-    { "id": 4, "name": "Hodi", "lab_head_id": 11 },
-    { "id": 5, "name": "Flaherty", "lab_head_id": 12 },
-    { "id": 6, "name": "Murphy", "lab_head_id": 13 }
-  ],
+    {
+      "title": "Resource", 
+      "id": 1, 
+      "name": "resource", 
+      "description": "A Resource describes an entity in the project"
+    }, 
+    {
+      "title": "Field", 
+      "id": 2, 
+      "name": "field", 
+      "description": "A field describes a property of a Resource"
+    }, 
+    {
+      "title": "Person", 
+      "id": 3, 
+      "name": "person", 
+      "description": "A person involved with the project"
+    }, 
+    {
+      "title": "Lab", 
+      "id": 4, 
+      "name": "lab", 
+      "description": "Lab at HMS"
+    }, 
+    {
+      "title": "Funding", 
+      "id": 5, 
+      "name": "funding", 
+      "description": "Grant or source of funding"
+    }, 
+    {
+      "title": "IRB", 
+      "id": 6, 
+      "name": "irb", 
+      "description": "IRB"
+    }, 
+    {
+      "title": "Sample", 
+      "id": 7, 
+      "name": "sample", 
+      "description": "Sample or slide"
+    }, 
+    {
+      "title": "Project", 
+      "id": 8, 
+      "name": "project", 
+      "description": "Project to organize experiments"
+    }, 
+    {
+      "title": "Experiment", 
+      "id": 9, 
+      "name": "experiment", 
+      "description": "Experiment to track cycles"
+    }, 
+    {
+      "title": "Cycle", 
+      "id": 10, 
+      "name": "cycle", 
+      "description": "Record of one staining and imaging cycle with multiple channels"
+    }, 
+    {
+      "title": "Microscope", 
+      "id": 11, 
+      "name": "microscope", 
+      "description": "Microscope description with channels"
+    }, 
+    {
+      "title": "Channel", 
+      "id": 12, 
+      "name": "channel", 
+      "description": "A wavelength delimited channel measured from a sample by the microscope"
+    }
+  ], 
+  "vocabulary": [
+    {
+      "scope": "channel.filter", 
+      "key": "dapi", 
+      "title": "DAPI"
+    }, 
+    {
+      "scope": "channel.filter", 
+      "key": "fitc", 
+      "title": "FITC"
+    }, 
+    {
+      "scope": "channel.filter", 
+      "key": "cy3", 
+      "title": "CY3"
+    }, 
+    {
+      "scope": "channel.filter", 
+      "key": "uvdapi", 
+      "title": "U/V DAPI"
+    }, 
+    {
+      "scope": "channel.filter", 
+      "key": "dapiorange", 
+      "title": "DAPI/Orange"
+    }, 
+    {
+      "scope": "sample.organism", 
+      "key": "human", 
+      "title": "Human"
+    }, 
+    {
+      "scope": "sample.organism", 
+      "key": "mouse", 
+      "title": "Mouse"
+    }, 
+    {
+      "scope": "sample.organism", 
+      "key": "rabbit", 
+      "title": "Rabbit"
+    }, 
+    {
+      "scope": "sample.organism", 
+      "key": "zebrafish", 
+      "title": "Zebrafish"
+    }, 
+    {
+      "scope": "sample.organism", 
+      "key": "c_elegans", 
+      "title": "C. Elegans"
+    }, 
+    {
+      "scope": "sample.tissue", 
+      "key": "lung", 
+      "title": "lung"
+    }, 
+    {
+      "scope": "sample.tissue", 
+      "key": "skin", 
+      "title": "skin"
+    }, 
+    {
+      "scope": "sample.tissue", 
+      "key": "pancreas", 
+      "title": "Pancreas"
+    }, 
+    {
+      "scope": "sample.tissue", 
+      "key": "heart", 
+      "title": "Heart"
+    }, 
+    {
+      "scope": "irb.type", 
+      "key": "secondary", 
+      "title": "Secondary"
+    }, 
+    {
+      "scope": "irb.type", 
+      "key": "multi_center", 
+      "title": "Multi-Center"
+    }, 
+    {
+      "scope": "irb.type", 
+      "key": "expedited", 
+      "title": "Expedited"
+    }, 
+    {
+      "scope": "irb.type", 
+      "key": "non_exempt", 
+      "title": "Non-Exempt"
+    }, 
+    {
+      "scope": "irb.type", 
+      "key": "human_subjects", 
+      "title": "Human subjects"
+    }
+  ], 
   "person": [
-    { "id": 1, "first_name": "Sally",  "last_name": "Smith", "lab_id": 1 },
-    { "id": 2, "first_name": "Joe",  "last_name": "Smith", "lab_id": 2 },
-    { "id": 3, "first_name": "Jane",  "last_name": "Doe", "lab_id": 3 },
-    { "id": 4, "first_name": "John",  "last_name": "Doe", "lab_id": 4 },
-    { "id": 5, "first_name": "Betty",  "last_name": "Jones", "lab_id": 1 },
-    { "id": 6, "first_name": "Bob",  "last_name": "Jones", "lab_id": 2 },
-    { "id": 7, "first_name": "Fiona",  "last_name": "Miller", "lab_id": 3 },
-    { "id": 8, "first_name": "P",  "last_name": "Sorger", "lab_id": 1 },
-    { "id": 9, "first_name": "S",  "last_name": "Santagata", "lab_id": 2 },
-    { "id": 10, "first_name": "A",  "last_name": "LeBoeuf", "lab_id": 3 },
-    { "id": 11, "first_name": "S",  "last_name": "Hodi", "lab_id": 4 },
-    { "id": 12, "first_name": "A",  "last_name": "Flaherty", "lab_id": 5 },
-    { "id": 13, "first_name": "G",  "last_name": "Murphy", "lab_id": 6 }
-  ],
-  "irb": [
-    { "id": 1, "irb_id": "IRB17-1688", "funding_ids": [ "1", "2" ], "type": "secondary", "lab_id": 1 },
-    { "id": 2, "irb_id": "13-416", "funding_ids": [ "1", "2" ], "type": "multi-center", "lab_id": 5, "secondary_irb_id": 1  },
-    { "id": 3, "irb_id": "05-042", "funding_ids": [ "1", "2" ], "type": "expedited", "lab_id": 4, "secondary_irb_id": 1  },
-    { "id": 4, "irb_id": "16-562", "funding_ids": [ "1", "2" ], "type": "non-exempt", "lab_id": 3, "secondary_irb_id": 1  },
-    { "id": 5, "irb_id": "10-417", "funding_ids": [ "1", "2" ], "type": "human-subjects", "lab_id": 2, "secondary_irb_id": 1  },
-    { "id": 6, "irb_id": "IRB18-1363", "funding_ids": [ "3" ], "type": "secondary", "lab_id": 1  },
-    { "id": 5, "irb_id": "11-104", "funding_ids": [ "3" ], "type": "expedited", "lab_id": 6, "secondary_irb_id": 6  }
-  ],
-  "funding": [
-    { "id": 1, "name": "CSBC U54" },
-    { "id": 2, "name": "CCSP" },
-    { "id": 3, "name": "PCA U2C (Main = Sorger/HMS)" }
-  ],
+    {
+      "lab_id": 1, 
+      "first_name": "Sally", 
+      "last_name": "Smith", 
+      "id": 1
+    }, 
+    {
+      "lab_id": 2, 
+      "first_name": "Joe", 
+      "last_name": "Smith", 
+      "id": 2
+    }, 
+    {
+      "lab_id": 3, 
+      "first_name": "Jane", 
+      "last_name": "Doe", 
+      "id": 3
+    }, 
+    {
+      "lab_id": 4, 
+      "first_name": "John", 
+      "last_name": "Doe", 
+      "id": 4
+    }, 
+    {
+      "lab_id": 1, 
+      "first_name": "Betty", 
+      "last_name": "Jones", 
+      "id": 5
+    }, 
+    {
+      "lab_id": 2, 
+      "first_name": "Bob", 
+      "last_name": "Jones", 
+      "id": 6
+    }, 
+    {
+      "lab_id": 3, 
+      "first_name": "Fiona", 
+      "last_name": "Miller", 
+      "id": 7
+    }, 
+    {
+      "lab_id": 1, 
+      "first_name": "P", 
+      "last_name": "Sorger", 
+      "id": 8
+    }, 
+    {
+      "lab_id": 2, 
+      "first_name": "S", 
+      "last_name": "Santagata", 
+      "id": 9
+    }, 
+    {
+      "lab_id": 3, 
+      "first_name": "A", 
+      "last_name": "LeBoeuf", 
+      "id": 10
+    }, 
+    {
+      "lab_id": 4, 
+      "first_name": "S", 
+      "last_name": "Hodi", 
+      "id": 11
+    }, 
+    {
+      "lab_id": 5, 
+      "first_name": "A", 
+      "last_name": "Flaherty", 
+      "id": 12
+    }, 
+    {
+      "lab_id": 6, 
+      "first_name": "G", 
+      "last_name": "Murphy", 
+      "id": 13
+    }
+  ], 
+  "lab": [
+    {
+      "id": 1, 
+      "lab_head_id": 8, 
+      "name": "Sorger"
+    }, 
+    {
+      "id": 2, 
+      "lab_head_id": 9, 
+      "name": "Santagata"
+    }, 
+    {
+      "id": 3, 
+      "lab_head_id": 10, 
+      "name": "LeBoeuf"
+    }, 
+    {
+      "id": 4, 
+      "lab_head_id": 11, 
+      "name": "Hodi"
+    }, 
+    {
+      "id": 5, 
+      "lab_head_id": 12, 
+      "name": "Flaherty"
+    }, 
+    {
+      "id": 6, 
+      "lab_head_id": 13, 
+      "name": "Murphy"
+    }
+  ], 
   "project": [
-    { "id": 1, "start_date": "1/14/2019", "pi_id": 1, "primary_irb_id": 1, "lsp_irb_id": 2, "protocol_io": "Standard Tissue CycIF protocol",
-      "scientist_samples": "Jane Goodall", "pathology_core": "HMS", "primary_contact": "Marie Curie", "grant": "Ludwig", "purpose": "Xenograft clones detection",
-      "organism": "human", "sample_size": 2, "cycles": 4, "comments": "breast tissue" },
-    { "id": 2, "start_date": "3/104/2018", "pi_id": 2, "primary_irb_id": 1, "lsp_irb_id": 2, "protocol_io": "Standard Tissue CycIF protocol",
-      "scientist_samples": "V Neumann", "pathology_core": "HMS", "primary_contact": "Marie Curie", "grant": "Ludwig", "purpose": "t-CyCIF training",
-      "organism": "human", "sample_size": 2, "cycles": 4, "comments": "lung tissue" },
-    { "id": 3, "start_date": "1/14/2017", "pi_id": 3, "primary_irb_id": 1, "lsp_irb_id": 2, "protocol_io": "Standard Tissue CycIF protocol",
-      "scientist_samples": "Louis Pasteur", "pathology_core": "HMS", "primary_contact": "Marie Curie", "grant": "Ludwig", "purpose": "t-CyCIF training",
-      "organism": "human", "sample_size": 2, "cycles": 4, "comments": "skin tissue" },
-    { "id": 4, "start_date": "2/14/2019", "pi_id": 4, "primary_irb_id": 1, "lsp_irb_id": 2, "protocol_io": "Standard Tissue CycIF protocol",
-      "scientist_samples": "Ben Franklin", "pathology_core": "HMS", "primary_contact": "Marie Curie", "grant": "Ludwig", "purpose": "t-CyCIF training",
-      "organism": "human", "sample_size": 2, "cycles": 4, "comments": "stomach tissue" },
-    { "id": 5, "start_date": "4/3/2019", "pi_id": 1, "primary_irb_id": 1, "lsp_irb_id": 2, "protocol_io": "Standard Tissue CycIF protocol",
-      "scientist_samples": "Peter Higgs", "pathology_core": "HMS", "primary_contact": "Marie Curie", "grant": "Ludwig", "purpose": "t-CyCIF training",
-      "organism": "human", "sample_size": 2, "cycles": 4, "comments": "breast tissue" },
-    { "id": 6, "start_date": "1/14/2019", "pi_id": 1, "primary_irb_id": 1, "lsp_irb_id": 2, "protocol_io": "Standard Tissue CycIF protocol",
-      "scientist_samples": "V Ramakrishnan", "pathology_core": "HMS", "primary_contact": "Marie Curie", "grant": "Ludwig", "purpose": "t-CyCIF training",
-      "organism": "human", "sample_size": 2, "cycles": 4, "comments": "breast tissue" },
-    { "id": 7, "start_date": "1/14/2019", "pi_id": 1, "primary_irb_id": 1, "lsp_irb_id": 2, "protocol_io": "Standard Tissue CycIF protocol",
-      "scientist_samples": "Jane Goodall", "pathology_core": "HMS", "primary_contact": "Marie Curie", "grant": "Ludwig", "purpose": "t-CyCIF training",
-      "organism": "human", "sample_size": 2, "cycles": 4, "comments": "breast tissue" }
-  ],
+    {
+      "primary_irb_id": 1, 
+      "grant": "Ludwig", 
+      "scientist_samples": "Jane Goodall", 
+      "protocol_io": "Standard Tissue CycIF protocol", 
+      "comments": "breast tissue", 
+      "start_date": "1/14/2019", 
+      "sample_size": 2, 
+      "purpose": "Xenograft clones detection", 
+      "primary_contact": "Marie Curie", 
+      "pathology_core": "HMS", 
+      "lsp_irb_id": 2, 
+      "cycles": 4, 
+      "organism": "human", 
+      "id": 1, 
+      "pi_id": 1
+    }, 
+    {
+      "primary_irb_id": 1, 
+      "grant": "Ludwig", 
+      "scientist_samples": "V Neumann", 
+      "protocol_io": "Standard Tissue CycIF protocol", 
+      "comments": "lung tissue", 
+      "start_date": "3/104/2018", 
+      "sample_size": 2, 
+      "purpose": "t-CyCIF training", 
+      "primary_contact": "Marie Curie", 
+      "pathology_core": "HMS", 
+      "lsp_irb_id": 2, 
+      "cycles": 4, 
+      "organism": "human", 
+      "id": 2, 
+      "pi_id": 2
+    }, 
+    {
+      "primary_irb_id": 1, 
+      "grant": "Ludwig", 
+      "scientist_samples": "Louis Pasteur", 
+      "protocol_io": "Standard Tissue CycIF protocol", 
+      "comments": "skin tissue", 
+      "start_date": "1/14/2017", 
+      "sample_size": 2, 
+      "purpose": "t-CyCIF training", 
+      "primary_contact": "Marie Curie", 
+      "pathology_core": "HMS", 
+      "lsp_irb_id": 2, 
+      "cycles": 4, 
+      "organism": "human", 
+      "id": 3, 
+      "pi_id": 3
+    }, 
+    {
+      "primary_irb_id": 1, 
+      "grant": "Ludwig", 
+      "scientist_samples": "Ben Franklin", 
+      "protocol_io": "Standard Tissue CycIF protocol", 
+      "comments": "stomach tissue", 
+      "start_date": "2/14/2019", 
+      "sample_size": 2, 
+      "purpose": "t-CyCIF training", 
+      "primary_contact": "Marie Curie", 
+      "pathology_core": "HMS", 
+      "lsp_irb_id": 2, 
+      "cycles": 4, 
+      "organism": "human", 
+      "id": 4, 
+      "pi_id": 4
+    }, 
+    {
+      "primary_irb_id": 1, 
+      "grant": "Ludwig", 
+      "scientist_samples": "Peter Higgs", 
+      "protocol_io": "Standard Tissue CycIF protocol", 
+      "comments": "breast tissue", 
+      "start_date": "4/3/2019", 
+      "sample_size": 2, 
+      "purpose": "t-CyCIF training", 
+      "primary_contact": "Marie Curie", 
+      "pathology_core": "HMS", 
+      "lsp_irb_id": 2, 
+      "cycles": 4, 
+      "organism": "human", 
+      "id": 5, 
+      "pi_id": 1
+    }, 
+    {
+      "primary_irb_id": 1, 
+      "grant": "Ludwig", 
+      "scientist_samples": "V Ramakrishnan", 
+      "protocol_io": "Standard Tissue CycIF protocol", 
+      "comments": "breast tissue", 
+      "start_date": "1/14/2019", 
+      "sample_size": 2, 
+      "purpose": "t-CyCIF training", 
+      "primary_contact": "Marie Curie", 
+      "pathology_core": "HMS", 
+      "lsp_irb_id": 2, 
+      "cycles": 4, 
+      "organism": "human", 
+      "id": 6, 
+      "pi_id": 1
+    }, 
+    {
+      "primary_irb_id": 1, 
+      "grant": "Ludwig", 
+      "scientist_samples": "Jane Goodall", 
+      "protocol_io": "Standard Tissue CycIF protocol", 
+      "comments": "breast tissue", 
+      "start_date": "1/14/2019", 
+      "sample_size": 2, 
+      "purpose": "t-CyCIF training", 
+      "primary_contact": "Marie Curie", 
+      "pathology_core": "HMS", 
+      "lsp_irb_id": 2, 
+      "cycles": 4, 
+      "organism": "human", 
+      "id": 7, 
+      "pi_id": 1
+    }
+  ], 
+  "field": [
+    {
+      "resource_name": "resource", 
+      "description": "Resource name", 
+      "data_type": "string", 
+      "title": "Name", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "name"
+    }, 
+    {
+      "resource_name": "resource", 
+      "description": "Resource ID", 
+      "data_type": "integer", 
+      "title": "ID", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "integer", 
+      "validators": null, 
+      "ref_endpoint": "resource", 
+      "name": "id"
+    }, 
+    {
+      "resource_name": "resource", 
+      "description": "Resource title", 
+      "data_type": "string", 
+      "title": "Title", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": [
+        "required"
+      ], 
+      "ref_endpoint": null, 
+      "name": "title"
+    }, 
+    {
+      "resource_name": "resource", 
+      "description": "Resource description", 
+      "data_type": "string", 
+      "title": "Description", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": [
+        "required"
+      ], 
+      "ref_endpoint": null, 
+      "name": "description"
+    }, 
+    {
+      "resource_name": "field", 
+      "description": "Field name", 
+      "data_type": "string", 
+      "title": "Name", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "name"
+    }, 
+    {
+      "resource_name": "field", 
+      "description": "Field resource name", 
+      "data_type": "string", 
+      "title": "Resource Name", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "resource_name"
+    }, 
+    {
+      "resource_name": "field", 
+      "description": "Title", 
+      "data_type": "string", 
+      "title": "Title", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "title"
+    }, 
+    {
+      "resource_name": "field", 
+      "description": "Field Description", 
+      "data_type": "string", 
+      "title": "Description", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "description"
+    }, 
+    {
+      "resource_name": "field", 
+      "description": "Data type used to serialize the field value", 
+      "data_type": "string", 
+      "title": "Data Type", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "data_type"
+    }, 
+    {
+      "resource_name": "field", 
+      "description": "Type information used for display of the field value", 
+      "data_type": "string", 
+      "title": "Display Type", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "display_type"
+    }, 
+    {
+      "resource_name": "field", 
+      "description": "Resource name that this field references (optional)", 
+      "data_type": "string", 
+      "title": "Ref Endpoint", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "ref_endpoint"
+    }, 
+    {
+      "resource_name": "field", 
+      "description": "Validators (optional)", 
+      "data_type": "arraystring", 
+      "title": "Validators", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "validators"
+    }, 
+    {
+      "resource_name": "field", 
+      "description": "Editable (optional default true)", 
+      "data_type": "boolean", 
+      "title": "Editable", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "boolean", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "editable"
+    }, 
+    {
+      "resource_name": "field", 
+      "description": "Scope specifier", 
+      "data_type": "string", 
+      "title": "Vocabulary Scope", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "vocab_scope"
+    }, 
+    {
+      "resource_name": "vocabulary", 
+      "description": "Vocabulary scope", 
+      "data_type": "string", 
+      "title": "Scope", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": [
+        "required"
+      ], 
+      "ref_endpoint": null, 
+      "name": "scope"
+    }, 
+    {
+      "resource_name": "vocabulary", 
+      "description": "Vocabulary key", 
+      "data_type": "string", 
+      "title": "key", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": [
+        "required"
+      ], 
+      "ref_endpoint": null, 
+      "name": "key"
+    }, 
+    {
+      "resource_name": "vocabulary", 
+      "description": "Vocabulary title", 
+      "data_type": "string", 
+      "title": "Title", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": [
+        "required"
+      ], 
+      "ref_endpoint": null, 
+      "name": "title"
+    }, 
+    {
+      "resource_name": "person", 
+      "description": "Person ID", 
+      "data_type": "integer", 
+      "title": "ID", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "integer", 
+      "validators": null, 
+      "ref_endpoint": "person", 
+      "name": "id"
+    }, 
+    {
+      "resource_name": "person", 
+      "description": "First name", 
+      "data_type": "string", 
+      "title": "First Name", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": [
+        "required", 
+        "name"
+      ], 
+      "ref_endpoint": null, 
+      "name": "first_name"
+    }, 
+    {
+      "resource_name": "person", 
+      "description": "Last name", 
+      "data_type": "string", 
+      "title": "Last Name", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": [
+        "required", 
+        "name"
+      ], 
+      "ref_endpoint": null, 
+      "name": "last_name"
+    }, 
+    {
+      "resource_name": "person", 
+      "description": "Lab ID the person belongs to", 
+      "data_type": "integer", 
+      "title": "Lab ID", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "integer", 
+      "validators": [
+        "required"
+      ], 
+      "ref_endpoint": "lab", 
+      "name": "lab_id"
+    }, 
+    {
+      "resource_name": "lab", 
+      "description": "Lab ID", 
+      "data_type": "integer", 
+      "title": "ID", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "integer", 
+      "validators": null, 
+      "ref_endpoint": "lab", 
+      "name": "id"
+    }, 
+    {
+      "resource_name": "lab", 
+      "description": "Name of the Lab", 
+      "data_type": "string", 
+      "title": "Name", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "name"
+    }, 
+    {
+      "resource_name": "lab", 
+      "description": "ID of the person leading the lab", 
+      "data_type": "integer", 
+      "title": "Lab Head ID", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "integer", 
+      "validators": null, 
+      "ref_endpoint": "person", 
+      "name": "lab_head_id"
+    }, 
+    {
+      "resource_name": "funding", 
+      "description": "Funding ID", 
+      "data_type": "integer", 
+      "title": "ID", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "integer", 
+      "validators": null, 
+      "ref_endpoint": "funding", 
+      "name": "id"
+    }, 
+    {
+      "resource_name": "funding", 
+      "description": "Name of the funding source", 
+      "data_type": "string", 
+      "title": "Name", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "name"
+    }, 
+    {
+      "resource_name": "irb", 
+      "description": "IRB ID", 
+      "data_type": "integer", 
+      "title": "ID", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "integer", 
+      "validators": null, 
+      "ref_endpoint": "irb", 
+      "name": "id"
+    }, 
+    {
+      "resource_name": "irb", 
+      "description": "IRB tracking id", 
+      "data_type": "string", 
+      "title": "IRB ID", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "irb_id"
+    }, 
+    {
+      "resource_name": "irb", 
+      "description": "IRB Funding source ID", 
+      "data_type": "arraystring", 
+      "title": "Funding", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "list", 
+      "validators": null, 
+      "ref_endpoint": "funding", 
+      "name": "funding_ids"
+    }, 
+    {
+      "resource_name": "irb", 
+      "description": "Type of IRB", 
+      "data_type": "string", 
+      "title": "Type", 
+      "vocab_scope": "irb.type", 
+      "editable": true, 
+      "display_type": "vocabulary", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "type"
+    }, 
+    {
+      "resource_name": "irb", 
+      "description": "Lab ID the IRB belongs to", 
+      "data_type": "integer", 
+      "title": "Lab ID", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "lab_id"
+    }, 
+    {
+      "resource_name": "irb", 
+      "description": "Secondary IRB", 
+      "data_type": "integer", 
+      "title": "Secondary IRB ID", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "integer", 
+      "validators": null, 
+      "ref_endpoint": "irb", 
+      "name": "secondary_irb_id"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Project ID", 
+      "data_type": "integer", 
+      "title": "Project ID", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "integer", 
+      "validators": null, 
+      "ref_endpoint": "project", 
+      "name": "id"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Start Date", 
+      "data_type": "string", 
+      "title": "Start Date", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "date", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "start_date"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Principal Investigator", 
+      "data_type": "integer", 
+      "title": "Principal Investigator ID", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": "person", 
+      "name": "pi_id"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Primary IRB ID", 
+      "data_type": "integer", 
+      "title": "Primary IRB ID", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": "irb", 
+      "name": "primary_irb_id"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "LSP IRB ID", 
+      "data_type": "integer", 
+      "title": "LSP IRB ID", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": "irb", 
+      "name": "lsp_irb_id"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Protocol.io", 
+      "data_type": "string", 
+      "title": "Protocol.io", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "protocol_io"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Scientist samples received from", 
+      "data_type": "string", 
+      "title": "Scientist samples received from", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "scientist_samples"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Pathology core", 
+      "data_type": "string", 
+      "title": "Pathology core", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "pathology_core"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Internal LSP coPI/Primary contact", 
+      "data_type": "string", 
+      "title": "Co PI", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "primary_contact"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Grant", 
+      "data_type": "string", 
+      "title": "Grant", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "grant"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Purpose", 
+      "data_type": "string", 
+      "title": "Purpose", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "purpose"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Organism", 
+      "data_type": "string", 
+      "title": "Organism", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "organism"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Sample Size", 
+      "data_type": "integer", 
+      "title": "Sample Size", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "integer", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "sample_size"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "CyCIF cycles", 
+      "data_type": "integer", 
+      "title": "CyCIF cycles", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "integer", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "cycles"
+    }, 
+    {
+      "resource_name": "project", 
+      "description": "Comments", 
+      "data_type": "string", 
+      "title": "Comments", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "comments"
+    }, 
+    {
+      "resource_name": "experiment", 
+      "description": "Experiment ID", 
+      "data_type": "integer", 
+      "title": "Experiment ID", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "integer", 
+      "validators": null, 
+      "ref_endpoint": "experiment", 
+      "name": "id"
+    }, 
+    {
+      "resource_name": "experiment", 
+      "description": "Experiment Number", 
+      "data_type": "integer", 
+      "title": "Experiment Number", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "number"
+    }, 
+    {
+      "resource_name": "experiment", 
+      "description": "Project ID", 
+      "data_type": "integer", 
+      "title": "Project ID", 
+      "vocab_scope": null, 
+      "editable": false, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": "project", 
+      "name": "project_id"
+    }, 
+    {
+      "resource_name": "experiment", 
+      "description": "Date Initiated", 
+      "data_type": "string", 
+      "title": "Date Initiated", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "date", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "date_initiated"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Slide ID", 
+      "data_type": "string", 
+      "title": "Slide ID", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "slide_id"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Checkout Date", 
+      "data_type": "string", 
+      "title": "Checkout Date", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "checkout_date"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Inventory Date", 
+      "data_type": "string", 
+      "title": "Inventory Date", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "inventory_date"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Project number", 
+      "data_type": "string", 
+      "title": "Project Number", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "project_number"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Study Name", 
+      "data_type": "string", 
+      "title": "Study Name", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "study_name"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Collaborator Name", 
+      "data_type": "string", 
+      "title": "Collaborator Name", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "collaborator_name"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Assigned To", 
+      "data_type": "string", 
+      "title": "Assigned To", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "assigned_to"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Primary IRB", 
+      "data_type": "string", 
+      "title": "Primary IRB", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "primary_irb"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Secondary IRB", 
+      "data_type": "string", 
+      "title": "Secondary IRB", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "secondary_irb"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Leica Barcode", 
+      "data_type": "string", 
+      "title": "Leica Barcode", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "leica_barcode"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Organism", 
+      "data_type": "string", 
+      "title": "Organism", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "organism"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Tissue", 
+      "data_type": "string", 
+      "title": "Tissue", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "tissue"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Pathology", 
+      "data_type": "string", 
+      "title": "Pathology", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "pathology"
+    }, 
+    {
+      "resource_name": "sample", 
+      "description": "Stain Type", 
+      "data_type": "string", 
+      "title": "Stain Type", 
+      "vocab_scope": null, 
+      "editable": true, 
+      "display_type": "string", 
+      "validators": null, 
+      "ref_endpoint": null, 
+      "name": "stain_type"
+    }
+  ], 
   "experiment": [
-    { "id": 1, "number": 1, "project_id": 1, "date_initiated": "1/10/2019" },
-    { "id": 2, "number": 2, "project_id": 1, "date_initiated": "2/10/2019" },
-    { "id": 3, "number": 3, "project_id": 1, "date_initiated": "3/10/2019" },
-    { "id": 4, "number": 1, "project_id": 2, "date_initiated": "1/10/2019" },
-    { "id": 5, "number": 2, "project_id": 2, "date_initiated": "2/10/2019" },
-    { "id": 6, "number": 3, "project_id": 2, "date_initiated": "3/10/2019" },
-    { "id": 7, "number": 1, "project_id": 3, "date_initiated": "1/10/2019" },
-    { "id": 8, "number": 2, "project_id": 3, "date_initiated": "2/10/2019" },
-    { "id": 9, "number": 3, "project_id": 3, "date_initiated": "3/10/2019" }
-  ]  
+    {
+      "project_id": 1, 
+      "date_initiated": "1/10/2019", 
+      "id": 1, 
+      "number": 1
+    }, 
+    {
+      "project_id": 1, 
+      "date_initiated": "2/10/2019", 
+      "id": 2, 
+      "number": 2
+    }, 
+    {
+      "project_id": 1, 
+      "date_initiated": "3/10/2019", 
+      "id": 3, 
+      "number": 3
+    }, 
+    {
+      "project_id": 2, 
+      "date_initiated": "1/10/2019", 
+      "id": 4, 
+      "number": 1
+    }, 
+    {
+      "project_id": 2, 
+      "date_initiated": "2/10/2019", 
+      "id": 5, 
+      "number": 2
+    }, 
+    {
+      "project_id": 2, 
+      "date_initiated": "3/10/2019", 
+      "id": 6, 
+      "number": 3
+    }, 
+    {
+      "project_id": 3, 
+      "date_initiated": "1/10/2019", 
+      "id": 7, 
+      "number": 1
+    }, 
+    {
+      "project_id": 3, 
+      "date_initiated": "2/10/2019", 
+      "id": 8, 
+      "number": 2
+    }, 
+    {
+      "project_id": 3, 
+      "date_initiated": "3/10/2019", 
+      "id": 9, 
+      "number": 3
+    }
+  ], 
+  "funding": [
+    {
+      "id": 1, 
+      "name": "CSBC U54"
+    }, 
+    {
+      "id": 2, 
+      "name": "CCSP"
+    }, 
+    {
+      "id": 3, 
+      "name": "PCA U2C (Main = Sorger/HMS)"
+    }
+  ], 
+  "irb": [
+    {
+      "lab_id": 1, 
+      "irb_id": "IRB17-1688", 
+      "funding_ids": [
+        "1", 
+        "2"
+      ], 
+      "secondary_irb_id": null, 
+      "type": "secondary", 
+      "id": 1
+    }, 
+    {
+      "lab_id": 5, 
+      "irb_id": "13-416", 
+      "funding_ids": [
+        "1", 
+        "2"
+      ], 
+      "secondary_irb_id": 1, 
+      "type": "multi-center", 
+      "id": 2
+    }, 
+    {
+      "lab_id": 4, 
+      "irb_id": "05-042", 
+      "funding_ids": [
+        "1", 
+        "2"
+      ], 
+      "secondary_irb_id": 1, 
+      "type": "expedited", 
+      "id": 3
+    }, 
+    {
+      "lab_id": 3, 
+      "irb_id": "16-562", 
+      "funding_ids": [
+        "1", 
+        "2"
+      ], 
+      "secondary_irb_id": 1, 
+      "type": "non-exempt", 
+      "id": 4
+    }, 
+    {
+      "lab_id": 2, 
+      "irb_id": "10-417", 
+      "funding_ids": [
+        "1", 
+        "2"
+      ], 
+      "secondary_irb_id": 1, 
+      "type": "human-subjects", 
+      "id": 5
+    }, 
+    {
+      "lab_id": 1, 
+      "irb_id": "IRB18-1363", 
+      "funding_ids": [
+        "3"
+      ], 
+      "secondary_irb_id": null, 
+      "type": "secondary", 
+      "id": 6
+    }, 
+    {
+      "lab_id": 6, 
+      "irb_id": "11-104", 
+      "funding_ids": [
+        "3"
+      ], 
+      "secondary_irb_id": 6, 
+      "type": "expedited", 
+      "id": 5
+    }
+  ]
 }
