@@ -68,6 +68,7 @@ let make =
           // or when the urlStack prop is updated.
           // ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ entityId)
           setEditState(_ => View);
+          fetchEntity(resource, entityId);
           refreshAction();
         }}
       />
