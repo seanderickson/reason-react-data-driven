@@ -41,17 +41,19 @@ let make = () => {
 
   let {resourceState, fetchResources, getResource}: Store.ResourceContext.t =
     Store.ResourceContext.useResources();
+  let {entityStoreState, fetchEntities, getEntity, getFilledResource}: EntityStore.ResourceContext.t =
+    EntityStore.ResourceContext.useResources();
 
   // DOM methods
 
-  let printResourceMenu = (resources:Resource.resources) => {
+  let printResourceMenu = (resources: Resource.resources) => {
     let testUrl = (url: ReasonReact.Router.url, test) =>
       switch (url.path) {
       | [testval, ..._] => testval == test
       | _ => false
       };
 
-    <ul>
+    <ul key="resources">
       {resources
        |> Array.map(_, resource =>
             <li key={resource.name}>
@@ -66,6 +68,44 @@ let make = () => {
     </ul>;
   };
 
+  let printContent = () => {
+    <div key="content" className="content">
+      {switch (route.path) {
+       | [] => ReasonReact.null
+       | [resourceName] =>
+         let foundResource = getFilledResource(resourceName);
+         switch (foundResource) {
+         | Some(resource) =>
+           <EntityListingTable key={resource.name} resource />
+         | None => str("Unknown resource: " ++ resourceName)
+         };
+       | [resourceName, entityId, ...tail] =>
+         let foundResource = getFilledResource(resourceName);
+         switch (foundResource) {
+         | Some(resource) =>
+           if (resourceName == "project") {
+             <ProjectView
+               resource
+               projectId=entityId
+               urlStack=tail
+               dispatchModal
+             />;
+           } else if (resourceName == "experiment") {
+             <ExperimentView resource entityId urlStack=tail dispatchModal />;
+           } else {
+             <EntityView
+               key={resource.name ++ "/" ++ entityId}
+               resource
+               entityId
+               urlStack=tail
+             />;
+           }
+         | None => str("Unknown resource: " ++ resourceName)
+         };
+       }}
+    </div>;
+  };
+
   <div>
     <Modal dispatchModal customClass="foo" show={modalState.shown}>
       {str(modalState.message)}
@@ -76,44 +116,27 @@ let make = () => {
        | LoadFailure(msg) => str("Load failure: " ++ msg)
        | Loading => str("Loading...")
        | LoadSuccess(resources) =>
-         switch (resources) {
-         | Some(resources) => resources->printResourceMenu
-         | None => str("No resources found")
+         switch (entityStoreState.webLoadingState) {
+         | LoadSuccess(_, _) =>
+           Js.log("loadSuccess");
+           switch (resources) {
+           | Some(resources) =>
+             [|printResourceMenu(resources), printContent()|]
+             |> ReasonReact.array
+           | None => str("No resources found")
+           };
+         | NotAsked => str("Not asked...")
+         | LoadFailure(entityType, msg) =>
+           str(
+             "Load failure: "
+             ++ EntityStore.entityTypeToJs(entityType)
+             ++ ": "
+             ++ msg,
+           )
+         | Loading(entityType) =>
+           str("Loading: " ++ EntityStore.entityTypeToJs(entityType))
          }
        }}
-      <div className="content">
-        {switch (route.path) {
-         | [] => ReasonReact.null
-         | [resourceName] =>
-           let foundResource = getResource(resourceName);
-           switch (foundResource) {
-           | Some(resource) =>
-             <EntityListingTable key={resource.name} resource />
-           | None => str("Unknown resource: " ++ resourceName)
-           };
-         | [resourceName, entityId, ...tail] =>
-           let foundResource = getResource(resourceName);
-           switch (foundResource) {
-           | Some(resource) =>
-             if (resourceName == "project") {
-               <ProjectView
-                 resource
-                 projectId=entityId
-                 urlStack=tail
-                 dispatchModal
-               />;
-             } else {
-               <EntityView
-                 key={resource.name ++ "/" ++ entityId}
-                 resource
-                 entityId
-                 urlStack=tail
-               />;
-             }
-           | None => str("Unknown resource: " ++ resourceName)
-           };
-         }}
-      </div>
     </div>
   </div>;
 };

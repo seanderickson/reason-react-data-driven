@@ -6,6 +6,7 @@ let debug_mode = false;
 type dataType =
   | String
   | Integer
+  | Float
   | Boolean
   | ArrayString;
 
@@ -71,6 +72,7 @@ module Field = {
             switch (v) {
             | "string" => String
             | "integer" => Integer
+            | "float" => Float
             | "arraystring" => ArrayString
             | "boolean" => Boolean
             | unknownType =>
@@ -102,6 +104,16 @@ module Field = {
       vocabularies: None,
     };
   let decodeMany = json => Json.Decode.(json |> array(decode));
+
+  let getVocabTitle = (field: t, rawValue: string) => {
+    // Js.log4("getVocabTitle", field.name, rawValue, field.vocabularies);
+    switch (field.vocabularies) {
+    | Some(vocabularies) =>
+      Belt.Array.getBy(vocabularies, v => v.key == rawValue)
+      |> Belt.Option.mapWithDefault(_, rawValue, v=>v.title)
+    | None => rawValue
+    };
+  };
 };
 
 module Resource = {
@@ -129,7 +141,6 @@ module Resource = {
   let getField = (resource, fieldName) => {
     resource.fields |> Array.getBy(_, field => field.name == fieldName);
   };
-
 };
 
 let fieldDecodeOpt = (json: Js.Json.t, schemaField: Field.t): option(string) => {
@@ -148,6 +159,10 @@ let fieldDecodeOpt = (json: Js.Json.t, schemaField: Field.t): option(string) => 
       json
       |> optional(field(schemaField.name, int))
       |> Belt.Option.map(_, string_of_int)
+    | Float =>
+      json
+      |> optional(field(schemaField.name, Json.Decode.float))
+      |> Belt.Option.map(_, Js.Float.toString)
     | ArrayString =>
       json
       |> optional(field(schemaField.name, array(string)))
@@ -189,6 +204,14 @@ let fieldDecoderExn = (json: Js.Json.t, schemaField: Field.t): string => {
           | None => "-"
           }
       )
+    | Float =>
+      json
+      |> optional(field(schemaField.name, Json.Decode.float))
+      |> (
+        fun
+        | Some(x) => Js.Float.toString(x)
+        | None => "-"
+      )
     | ArrayString =>
       json
       |> optional(field(schemaField.name, array(string)))
@@ -198,7 +221,7 @@ let fieldDecoderExn = (json: Js.Json.t, schemaField: Field.t): string => {
       |> optional(field(schemaField.name, bool))
       |> Belt.Option.getWithDefault(_, true)
       |> string_of_bool
-    | _ => {j|unknown type for field: "$schemaField.name" - "$schemaField.data_type" |j}
+    // | _ => {j|unknown type for field: "$schemaField.name" - "$schemaField.data_type" |j}
     }
   );
 };
@@ -226,12 +249,25 @@ let singleFieldDecode = (json: Js.Json.t, schemaField: Field.t): string => {
       json,
     );
   };
-  switch (schemaField.data_type) {
-  | String => json |> Json.Decode.string
-  | Integer => json |> Json.Decode.int |> string_of_int
-  | ArrayString =>
-    json |> Json.Decode.(array(string)) |> Js.Array.joinWith(", ")
-  | Boolean => json |> Json.Decode.(bool) |> string_of_bool
+  try (
+    switch (schemaField.data_type) {
+    | String => json |> Json.Decode.string
+    | Integer => json |> Json.Decode.int |> string_of_int
+    | Float => json |> Json.Decode.float |> Js.Float.toString
+    | ArrayString =>
+      json |> Json.Decode.(array(string)) |> Js.Array.joinWith(", ")
+    | Boolean => json |> Json.Decode.(bool) |> string_of_bool
+    }
+  ) {
+  | Js.Exn.Error(e) =>
+    switch (Js.Exn.message(e)) {
+    | Some(message) => Js.log2("error", message)
+    | None => Js.log("no message")
+    };
+    Js.log3("Decode error", schemaField.resource_name, schemaField.name);
+    Js.log2("json for error", json);
+    "";
+  | Json.Decode.DecodeError(msg) => msg
   };
 };
 
@@ -245,9 +281,9 @@ module Encode = {
     switch (field.data_type) {
     | String => formValue |> Js.Json.string
     | Integer => formValue |> float_of_string |> Js.Json.number
+    | Float => formValue |> float_of_string |> Js.Json.number
     | Boolean => formValue |> bool_of_string |> Js.Json.boolean
     | _ =>
       raise(UndefinedEncoder({j|Encoder for "$field.name" is not defined|j}))
     };
-
 };

@@ -66,16 +66,15 @@ let make = (~resource: Resource.t, ~initialState=NotAsked, ()) => {
                    |> Array.map(
                         _,
                         field => {
-                          // let fvalue = fieldReader(field.name);
-                          let fvalue =
-                            Metadata.fieldDecoder(entity, field);
+                          let fvalue = Metadata.fieldDecoder(entity, field);
+                          let displayValue = Metadata.Field.getVocabTitle(field, fvalue);
                           <td key={field.name} className="text-left">
                             {switch (field.ref_endpoint) {
                              | Some(endpoint) =>
                                <a
                                  onClick={handleRoute(endpoint, fvalue)}
                                  href={"/" ++ endpoint ++ "/" ++ fvalue}>
-                                 {str(fvalue)}
+                                 {str(displayValue)}
                                </a>
                              | None => str(fvalue)
                              }}

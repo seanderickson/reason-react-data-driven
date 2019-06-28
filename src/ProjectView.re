@@ -4,7 +4,7 @@ open Store;
 open Metadata;
 open EntityModules;
 
-type addState  =
+type addState =
   | Add(string, Js.Json.t)
   | View;
 
@@ -17,8 +17,11 @@ let make =
       ~urlStack: list(string),
     ) => {
   Js.log3("show project: ", projectId, urlStack);
-  let {resourceState, fetchResources, getResource}: Store.ResourceContext.t =
-    Store.ResourceContext.useResources();
+
+  // Accessors for global context store data
+  let {entityStoreState, fetchEntities, getEntity, getFilledResource}: EntityStore.ResourceContext.t =
+    EntityStore.ResourceContext.useResources();
+
   // Entity state
 
   let (entityState, setEntityState) = React.useState(() => NotAsked);
@@ -27,7 +30,11 @@ let make =
 
   let (addState, setAddState) = React.useState(() => View);
 
+  let experimentResource =
+    Belt.Option.getExn(getFilledResource("experiment"));
+
   let addExperiment = currentExperiments => {
+    // Create the default values for the form
     let defaults: Js.Dict.t(Js.Json.t) = Js.Dict.empty();
 
     Js.Dict.set(
@@ -36,23 +43,19 @@ let make =
       projectId |> float_of_string |> Js.Json.number,
     );
 
-    // Prototype use case: get the "next" experiment ID
+    // Note: Prototype use case only: get the "next" experiment ID
     let newId =
       switch (currentExperiments) {
       | Some(exps) =>
-        Belt.Array.reduce(
-          exps,
-          1,
-          (max, exp) => {
-            let expEntity = Experiment.decode(exp);
-            expEntity.id >= max ? expEntity.id + 1 : max;
-          },
+        Belt.Array.reduce(exps, 1, (max, exp) =>
+          Experiment.decode(exp)
+          |> (expEntity => expEntity.id >= max ? expEntity.id + 1 : max)
         )
       | None => 1
       };
     Js.Dict.set(defaults, "id", newId |> float_of_int |> Js.Json.number);
 
-    // Prototype use case: get the "next" experiment ordinal
+    // Note: Prototype use case only: get the "next" experiment ordinal
     let newOrdinal =
       switch (
         currentExperiments
@@ -74,8 +77,6 @@ let make =
       "number",
       newOrdinal |> float_of_int |> Js.Json.number,
     );
-
-    // TODO: set the current date
 
     setAddState(_ => Add(string_of_int(newId), defaults |> Js.Json.object_));
   };
@@ -99,7 +100,6 @@ let make =
   };
 
   let fetchProject = id => {
-    Js.log("fetch project...");
     setEntityState(_ => Loading);
     ApiClient.getEntity("project", id)
     |> Js.Promise.then_(result => {
@@ -109,7 +109,6 @@ let make =
              fetchExperiments();
              LoadSuccess(entity);
            })
-         //  fetchExperiments();
          | Result.Error(message) => setEntityState(_ => LoadFailure(message))
          };
          Js.Promise.resolve();
@@ -122,7 +121,7 @@ let make =
       fetchProject(projectId);
       Some(() => Js.log("cleanup Effect"));
     },
-    [|urlStack|],
+    [|projectId|],
   );
 
   switch (entityState) {
@@ -130,7 +129,46 @@ let make =
   | LoadFailure(msg) => str("Load failure: " ++ msg)
   | Loading => str("Loading project...")
   | LoadSuccess(entity) =>
-    let experimentResource = Belt.Option.getExn(getResource("experiment"));
+    // viewFunctionMap: field display overrides
+    // TODO: For demonstration only ( these examples can also be done using vocabulary)
+    // TODO: demonstrate a similar "editFunctionMap" for custom editor implementations.
+    let viewFunctionMap = Js.Dict.empty();
+
+    let fieldName = "pi_id";
+    Js.Dict.set(viewFunctionMap, fieldName, entity =>
+      Resource.getField(resource, fieldName)
+      |> Belt.Option.mapWithDefault(
+           _, "field name not found: " ++ fieldName, field =>
+           Metadata.fieldDecoder(~json=entity, ~field)
+           |> (
+             pi_id =>
+               getEntity(`person, pi_id)
+               |> Belt.Option.mapWithDefault(_, "no data for: " ++ pi_id, json =>
+                    Person.decode(json)
+                    |> (person => person.first_name ++ " " ++ person.last_name)
+                  )
+           )
+         )
+    );
+
+    let fieldName = "primary_irb_id";
+    Js.Dict.set(viewFunctionMap, fieldName, entity =>
+      Resource.getField(resource, fieldName)
+      |> Belt.Option.mapWithDefault(
+           _, "field name not found: " ++ fieldName, field =>
+           Metadata.fieldDecoder(~json=entity, ~field)
+           |> (
+             irb_id =>
+               getEntity(`irb, irb_id)
+               |> Belt.Option.mapWithDefault(
+                    _, "no data for: " ++ irb_id, json =>
+                    Irb.decode(json)
+                    |> (irb => irb.irb_id ++ " - " ++ irb.type_)
+                  )
+           )
+         )
+    );
+
     <div>
       <EntityView
         resource
@@ -140,7 +178,8 @@ let make =
         refreshAction={_ => {
           setAddState(_ => View);
           fetchProject(projectId);
-        }}>
+        }}
+        viewFunctionMap>
         {switch (addState) {
          | View =>
            switch (experimentState) {
@@ -148,7 +187,6 @@ let make =
            | LoadFailure(msg) => str("Load failure: " ++ msg)
            | Loading => str("Loading experiments...")
            | LoadSuccess(entities) =>
-             // FIXME: Add button should not show if the project is being edited
              <div>
                <h3>
                  <button onClick={_ => addExperiment(entities)}>

@@ -216,11 +216,11 @@ let make =
 
   let printRow = (field: Field.t) => {
     let fieldJsonValue = getCurrentFieldValue(field);
+    // Js.log4("printRow", field.name, "value", fieldJsonValue);
     let fieldStringValue =
       Belt.Option.mapWithDefault(fieldJsonValue, "", jsonValue =>
         Metadata.singleFieldDecode(jsonValue, field)
       );
-    Js.log4("printRow", field.name, "value", fieldJsonValue);
     <div key={"row-field-" ++ field.name} className="detail_table_row">
       <div className="md:text-right">
         <label

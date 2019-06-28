@@ -15,6 +15,7 @@ let make =
       ~urlStack: list(string),
       ~initialState=NotAsked,
       ~refreshAction=_ => (),
+      ~viewFunctionMap=(Js.Dict.empty(): Js.Dict.t(Js.Json.t => string)),
       ~children=ReasonReact.null,
     ) => {
   // Entity state
@@ -50,7 +51,7 @@ let make =
       fetchEntity(resource, entityId);
       Some(() => Js.log("cleanup Effect"));
     },
-    [|urlStack|],
+    [|entityId|],
   );
 
   let showEntity = entity => {
@@ -68,7 +69,11 @@ let make =
           // or when the urlStack prop is updated.
           // ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ entityId)
           setEditState(_ => View);
-          fetchEntity(resource, entityId);
+
+          // NOTE: creates error:
+          // Warning: Can't perform a React state update on an unmounted component
+          // fetchEntity(resource, entityId);
+          
           refreshAction();
         }}
       />
@@ -88,52 +93,13 @@ let make =
           key={resource.name ++ "-detail-" ++ entityId}
           resource
           id=entityId
-          entity>
+          entity
+          viewFunctionMap>
           children
         </DetailView>
       </div>
     };
   };
-
-  // let showEntity = entity => {
-  //   switch (urlStack) {
-  //   | ["edit"] =>
-  //     <EditView
-  //       key={resource.name ++ "-edit-" ++ entityId}
-  //       resource
-  //       id=entityId
-  //       entity
-  //       refreshAction={_ =>{
-  //         // Note: pushing a route alone will not remount this component and
-  //         // reset the state; but it will set a new urlStack prop. Therefore,
-  //         // useEffect is used to fetch when either the component is mounted,
-  //         // or when the urlStack prop is updated.
-  //         ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ entityId);
-  //         // Js.log2("EntityView: refreshAction");
-  //         // refreshAction();
-  //         }}
-  //     />
-  //   | _ =>
-  //     <div>
-  //       <button
-  //         onClick={_ =>
-  //           ReasonReactRouter.push(
-  //             "/" ++ resource.name ++ "/" ++ entityId ++ "/edit",
-  //           )
-  //         }>
-  //         {str("Edit: " ++ resource.title ++ "/" ++ entityId)}
-  //       </button>
-  //       <DetailView
-  //         key={resource.name ++ "-detail-" ++ entityId}
-  //         resource
-  //         id=entityId
-  //         entity
-  //       >
-  //       children
-  //       </DetailView>
-  //     </div>
-  //   };
-  // };
 
   switch (entityState) {
   | NotAsked => str("Not asked...")

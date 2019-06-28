@@ -92,12 +92,15 @@ let assembleField = (field: Field.t, vocabs): Field.t => {
   | Some(vocab_scope) => {
       ...field,
       vocabularies:
-        Some(vocabs |> Js.Array.filter(v => v.Vocabulary.scope == vocab_scope)),
+        Some(
+          vocabs |> Js.Array.filter(v => v.Vocabulary.scope == vocab_scope),
+        ),
     }
   | None => field
   };
 };
-let assembleResources = (resources: Resource.resources, fields, vocabs): Resource.resources => {
+let assembleResources =
+    (resources: Resource.resources, fields, vocabs): Resource.resources => {
   let assembledFields: Field.fields =
     Array.map(fields, field => assembleField(field, vocabs));
 
@@ -131,14 +134,17 @@ let buildResources = () =>
                          ),
                        )
                      | Result.Error(message) =>
-                       Js.Promise.resolve(Result.Error("Resource fetch: " ++ message))
+                       Js.Promise.resolve(
+                         Result.Error("Resource fetch: " ++ message),
+                       )
                      }
                    )
               | Result.Error(message) =>
                 Js.Promise.resolve(Result.Error("Field fetch: " ++ message))
               }
             )
-       | Result.Error(message) => Js.Promise.resolve(Result.Error("Vocabulary fetch: " ++ message))
+       | Result.Error(message) =>
+         Js.Promise.resolve(Result.Error("Vocabulary fetch: " ++ message))
        }
      );
 
@@ -149,12 +155,7 @@ let getEntity = (resourceName, id) =>
   fetch(apiUrl ++ "/" ++ resourceName ++ "/" ++ id, nullDecoder);
 
 let postEntity = (resourceName, payload) =>
-  postPatch(
-    apiUrl ++ "/" ++ resourceName,
-    Fetch.Post,
-    nullDecoder,
-    payload,
-  );
+  postPatch(apiUrl ++ "/" ++ resourceName, Fetch.Post, nullDecoder, payload);
 
 let patchEntity = (resourceName, id, payload) =>
   postPatch(

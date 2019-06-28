@@ -3,10 +3,16 @@ open Common;
 open Metadata;
 open Store;
 
-
 [@react.component]
-let make = (~resource: Resource.t, ~id: string, ~entity: Js.Json.t, ~children=ReasonReact.null, ()) => {
-
+let make =
+    (
+      ~resource: Resource.t,
+      ~id: string,
+      ~entity: Js.Json.t,
+      ~viewFunctionMap=(Js.Dict.empty(): Js.Dict.t(Js.Json.t => string)),
+      ~children=ReasonReact.null,
+      (),
+    ) => {
   let printRow = (field: Field.t, rvalue) => {
     <div key={"row-field-" ++ field.name} className="detail_table_row">
       <label
@@ -15,6 +21,17 @@ let make = (~resource: Resource.t, ~id: string, ~entity: Js.Json.t, ~children=Re
       </label>
       <span id={"inline-" ++ field.name} className="text-left"> rvalue </span>
     </div>;
+  };
+
+  let getFieldDisplayValue = (field: Field.t, entity) => {
+    switch (Js.Dict.get(viewFunctionMap, field.name)) {
+    | Some(viewFunction) => viewFunction(entity)
+    | None =>
+      Metadata.Field.getVocabTitle(
+        field,
+        Metadata.fieldDecoder(entity, field),
+      )
+    };
   };
 
   <div>
@@ -26,12 +43,13 @@ let make = (~resource: Resource.t, ~id: string, ~entity: Js.Json.t, ~children=Re
        |> Array.map(
             _,
             field => {
-              let fvalue = Metadata.fieldDecoder(entity, field);
+              let rvalue = Metadata.fieldDecoder(entity, field);
+              let fvalue = getFieldDisplayValue(field, entity);
               printRow(
                 field,
                 switch (field.ref_endpoint) {
                 | Some(endpoint) =>
-                  <Link href={"/" ++ endpoint ++ "/" ++ fvalue} selected=false>
+                  <Link href={"/" ++ endpoint ++ "/" ++ rvalue} selected=false>
                     {str(fvalue)}
                   </Link>
                 | None => str(fvalue)
