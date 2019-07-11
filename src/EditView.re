@@ -6,6 +6,11 @@ open Metadata;
   {|require('../node_modules/react-datepicker/dist/react-datepicker.css')|}
 ];
 
+let debug_mode = false;
+// let tailwindInputClasses = "bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight";
+let tailwindInputClasses = "appearance-none border-2 rounded max-w-md w-full py-1 leading-tight";
+let tailwindInputWrapperClasses = "appearance-none p-0 rounded max-w-md w-full leading-tight";
+
 type editState('a) =
   | Edit('a)
   | Modified('a)
@@ -55,6 +60,12 @@ let validateField =
         }
       }
     );
+    if (field.display_type == Date) {
+      if (!(Js.Date.fromString(value) |> isJsDateValid)) {
+        Js.Dict.set(errors, "date", "Invalid date");
+      };
+    };
+
     switch (Belt.Array.size(Js.Dict.keys(errors))) {
     | 0 => None
     | _ => Some(errors)
@@ -97,6 +108,8 @@ let make =
       ~isNew=false,
       ~saveAction=?,
     ) => {
+  // unit,
+
   let (state, setState) = React.useState(() => Edit(entity));
 
   // Store the initial entity for detection of user updates:
@@ -104,7 +117,8 @@ let make =
   let initialEntity = entity |> Js.Json.decodeObject |> Belt.Option.getExn;
 
   let getInitialFieldValue = (field: Field.t): option(Js.Json.t) =>
-    Js.Dict.get(initialEntity, field.name);
+    Js.Dict.get(initialEntity, field.name)
+    |> Belt.Option.flatMap(_, v => v == Js.Json.null ? None : Some(v));
 
   // Track the current entity state:
   // - Use a Js.Dict with the current field values
@@ -124,12 +138,13 @@ let make =
     };
 
   let getCurrentFieldValue = (field: Field.t): option(Js.Json.t) =>
-    Js.Dict.get(getUpdatedEntity(), field.name);
+    Js.Dict.get(getUpdatedEntity(), field.name)
+    |> Belt.Option.flatMap(_, v => v == Js.Json.null ? None : Some(v));
 
   let isFieldModified = (field: Field.t) =>
     getCurrentFieldValue(field) != getInitialFieldValue(field);
 
-  let updateField = (field: Field.t, value) => {
+  let updateField = (field: Field.t, value: option(string)) => {
     Js.log3("updateField", field.name, value);
 
     let updatedEntity = getUpdatedEntity();
@@ -216,7 +231,9 @@ let make =
 
   let printRow = (field: Field.t) => {
     let fieldJsonValue = getCurrentFieldValue(field);
-    // Js.log4("printRow", field.name, "value", fieldJsonValue);
+    if (debug_mode == true) {
+      Js.log4("printRow", field.name, "value", fieldJsonValue);
+    };
     let fieldStringValue =
       Belt.Option.mapWithDefault(fieldJsonValue, "", jsonValue =>
         Metadata.singleFieldDecode(jsonValue, field)
@@ -233,64 +250,143 @@ let make =
         </label>
       </div>
       {if (field.editable) {
-         // TODO: rework - example select input
+         let isRequired =
+           Belt.Option.mapWithDefault(field.validators, false, validators =>
+             Belt.Array.some(validators, v => v == `required)
+           );
+         // TODO: implement multiselect
          if (field.vocabularies != None) {
-           <select
-             className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight"
-             id={"inline-" ++ field.name}
-             onChange={evt => evt |> getValue |> updateField(field)}
-             value=fieldStringValue>
-             {Belt.Option.getExn(field.vocabularies)
-              |> Array.map(_, v =>
-                   <option key={v.key} value={v.key}> {str(v.title)} </option>
-                 )
-              |> ReasonReact.array}
-           </select>;
-         } else
-           {
-             switch (field.display_type) {
-             | "date" =>
-               //NOTE: Date conversion is performed only on edit; otherwise dates are treated as strings.
-               let dateValue =
-                 Belt.Option.mapWithDefault(
-                   fieldJsonValue, Js.Date.make(), jsonValue =>
-                   Metadata.singleFieldDecode(jsonValue, field)
-                   |> Js.Date.fromString
-                 );
-               // Note: Date.parse may produce an "Invalid Date"; detect this as DatePicker will error
-               if (!isJsDateValid(dateValue)) {
-                 <div>
-                   <DatePicker
-                     className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight"
-                     //  id={"inline-" ++ field.name}
-                     dateFormat="yyyy-MM-dd"
-                     selected={Js.Date.make()}
-                     onChange={obj => obj |> formatDate |> updateField(field)}
-                   />
-                   <div className="text-red">
-                     {str("Invalid date from server: " ++ fieldStringValue)}
-                   </div>
-                 </div>;
-               } else {
-                 <DatePicker
-                   //  id={"inline-" ++ field.name}
-                   className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight"
-                   dateFormat="yyyy-MM-dd"
-                   selected=dateValue
-                   onChange={obj => obj |> formatDate |> updateField(field)}
-                 />;
-               };
-             | _ =>
-               <input
-                 className="bg-gray-200 appearance-none border-2 border-gray-200 rounded max-w-md w-full py-1 leading-tight"
-                 id={"inline-" ++ field.name}
-                 type_={getHtmlFieldType(field)}
-                 value=fieldStringValue
-                 onChange={evt => evt |> getValue |> updateField(field)}
-               />
+           switch (field.display_type) {
+           | Autosuggest =>
+             let suggestionsAvailable =
+               Belt.Option.getExn(field.vocabularies)
+               |> Belt.Array.map(_, vocab => vocab.key);
+             let fetchSuggestions = (value: string): array(string) => {
+               // TODO: Can query external server here
+               let inputValue =
+                 Js.String.trim(value) |> Js.String.toLowerCase;
+               let inputLength = inputValue |> Js.String.length;
+               let sugs =
+                 inputLength === 0
+                   ? [||]
+                   : suggestionsAvailable
+                     |> Js.Array.filter(v =>
+                          Js.String.toLowerCase(v)
+                          |> Js.String.splitByRe([%re "/\\s+/"])
+                          |> Belt.Array.some(_, v =>
+                               Belt.Option.getExn(v)
+                               |> Js.String.slice(~from=0, ~to_=inputLength)
+                               === inputValue
+                             )
+                        );
+               Js.log3("fetchSuggestions", value, sugs);
+               sugs;
              };
+
+             <AutosuggestContainer
+               id={"inline-" ++ field.name}
+               initialValue={Some(fieldStringValue)}
+               onChange={v => updateField(field, v)}
+               getSuggestions={v =>
+                 Js.Promise.resolve(Belt.Result.Ok(fetchSuggestions(v)))
+               }
+               containerClasses=tailwindInputWrapperClasses
+               //  containerStyle={ReactDOMRe.Style.make(
+               //    ~width="100%",
+               //    ~maxWidth="40rem",
+               //    (),
+               //  )}
+             />;
+           | _ =>
+             let options =
+               Belt.Option.getExn(field.vocabularies)
+               |> Belt.Array.map(_, vocab =>
+                    ReactSelect.suggestion(
+                      ~value=vocab.key,
+                      ~label=vocab.title,
+                    )
+                  );
+
+             let suggestionValue =
+               Belt.Array.getBy(options, opt =>
+                 ReactSelect.valueGet(opt) == fieldStringValue
+               );
+
+             <ReactSelect
+               className=tailwindInputWrapperClasses
+               classNamePrefix="react_select"
+               options
+               onChange={suggestion => {
+                 Js.Nullable.toOption(suggestion)
+                 |> Belt.Option.map(_, v => ReactSelect.valueGet(v))
+                 |> updateField(field);
+               }}
+               value=suggestionValue
+               isClearable={!isRequired}
+               placeholder="Select a value..."
+             />;
            };
-           // </div>
+         } else {
+           switch (field.display_type) {
+           | Date =>
+             let dateValue =
+               Belt.Option.map(fieldJsonValue, jsonValue =>
+                 Metadata.singleFieldDecode(jsonValue, field)
+                 |> Js.Date.fromString
+               );
+
+             // Note: Date.parse may produce an "Invalid Date"; detect this as DatePicker will error
+             let validFromServer =
+               Belt.Option.mapWithDefault(dateValue, true, v =>
+                 isJsDateValid(v)
+               );
+
+             let dateValue = validFromServer ? dateValue : None;
+
+             if (debug_mode == true) {
+               Js.log4(
+                 "input date value",
+                 dateValue,
+                 "validFromServer",
+                 validFromServer,
+               );
+             };
+             // TODO: look for better width styling option on DatePicker
+             <div style={ReactDOMRe.Style.make(~width="100%", ())}>
+               <DatePicker
+                 className=tailwindInputClasses
+                 //  id={"inline-" ++ field.name}
+                 dateFormat="yyyy-MM-dd"
+                 selected=dateValue
+                 isClearable={!isRequired}
+                 onChange={obj =>
+                   obj
+                   |> Js.Nullable.toOption
+                   |> Belt.Option.map(_, v => formatDate(v))
+                   |> updateField(field)
+                 }
+               />
+               {if (!validFromServer) {
+                  <div className="text-red">
+                    {str("Invalid date from server: " ++ fieldStringValue)}
+                  </div>;
+                } else {
+                  ReasonReact.null;
+                }}
+             </div>;
+           //NOTE: Date conversion is performed only on edit; otherwise dates are treated as strings.
+
+           | _ =>
+             <input
+               className=tailwindInputClasses
+               id={"inline-" ++ field.name}
+               type_={getHtmlFieldType(field)}
+               value=fieldStringValue
+               onChange={evt => evt |> getValue |> updateField(field)}
+             />
+           };
+         };
+         // </div>
        } else {
          let value =
            Belt.Option.mapWithDefault(fieldJsonValue, "", jsonValue =>
@@ -330,7 +426,9 @@ let make =
       | Result.Ok(entity) =>
         Js.log2("Save success: ", entity);
         switch (saveAction) {
-        | Some(action) => action()
+        | Some(saveActionFunction) =>
+          setState(_ => SaveSuccess(entity));
+          saveActionFunction(entity);
         | None => setState(_ => SaveSuccess(entity))
         };
 
@@ -403,10 +501,13 @@ let make =
       <h3>
         <button
           style={ReactDOMRe.Style.make(~display="none", ())}
+          className="btn btn-gray"
           onClick={_ => ()}>
           {str("Save")}
         </button>
-        <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+        <button className="btn btn-gray" onClick={_ => refreshAction()}>
+          {str("Cancel")}
+        </button>
       </h3>
       <h3 className="shadow"> {str("Edit entity: " ++ resource.title)} </h3>
       {printErrors()}
@@ -416,11 +517,14 @@ let make =
     <div id="entity">
       <h3>
         <button
+          className="btn btn-gray"
           style={ReactDOMRe.Style.make(~display="none", ())}
           onClick={_ => ()}>
           {str("Save")}
         </button>
-        <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+        <button className="btn btn-gray" onClick={_ => refreshAction()}>
+          {str("Cancel")}
+        </button>
       </h3>
       <h3 className="shadow"> {str("Edit entity: " ++ resource.title)} </h3>
       {printErrors()}
@@ -429,8 +533,12 @@ let make =
   | Modified(currentEntity) =>
     <div id="entity">
       <h3>
-        <button onClick={save(currentEntity)}> {str("Save")} </button>
-        <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+        <button className="btn btn-gray" onClick={save(currentEntity)}>
+          {str("Save")}
+        </button>
+        <button className="btn btn-gray" onClick={_ => refreshAction()}>
+          {str("Cancel")}
+        </button>
       </h3>
       <h3 className="shadow">
         {str("Edit entity: " ++ resource.title ++ "/" ++ id)}
@@ -445,11 +553,14 @@ let make =
 
         <h3>
           <button
+            className="btn btn-gray"
             style={ReactDOMRe.Style.make(~display="none", ())}
             onClick={_ => ()}>
             {str("Save")}
           </button>
-          <button onClick={_ => refreshAction()}> {str("Cancel")} </button>
+          <button className="btn btn-gray" onClick={_ => refreshAction()}>
+            {str("Cancel")}
+          </button>
         </h3>
         <h3 className="shadow">
           {str("Edit entity: " ++ resource.title ++ "/" ++ id)}
@@ -466,7 +577,9 @@ let make =
     </div>
   | SaveSuccess(newEntity) =>
     <div>
-      <button onClick={_ => refreshAction()}> {str("Back")} </button>
+      <button className="btn btn-gray" onClick={_ => refreshAction()}>
+        {str("Back")}
+      </button>
       <h3 className="shadow">
         {str("Save success for: " ++ resource.title ++ "/" ++ id)}
       </h3>

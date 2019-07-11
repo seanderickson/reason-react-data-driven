@@ -4,7 +4,7 @@ open Metadata;
 let debug_mode = false;
 let test_mock_error_mode = false;
 
-let apiUrl = "http://localhost:3000";
+let apiUrl = "http://localhost:3001";
 
 type apiResult('a) = Js.Promise.t(Result.t('a, string));
 

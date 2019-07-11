@@ -10,6 +10,15 @@ type dataType =
   | Boolean
   | ArrayString;
 
+type displayType =
+  | String
+  | Integer
+  | Float
+  | Boolean
+  | Date
+  | Autosuggest
+  | List;
+
 // Try out poly variant: the jsConverter generates the "validatorFromJs" function
 [@bs.deriving jsConverter]
 type validator = [ | `required | `name | `email];
@@ -47,7 +56,7 @@ module Field = {
     description: string,
     data_type: dataType,
     // Display type; may imply conversion, e.g. string => date
-    display_type: string,
+    display_type: displayType,
     // If field refers to another entity; endpoint for that entity
     ref_endpoint: option(string),
     validators: option(array(validator)),
@@ -68,7 +77,7 @@ module Field = {
         json
         |> field("data_type", string)
         |> (
-          v =>
+          (v) => (
             switch (v) {
             | "string" => String
             | "integer" => Integer
@@ -84,9 +93,35 @@ module Field = {
                   ++ Js.Json.stringify(json),
                 ),
               )
-            }
+            }: dataType
+          )
         ),
-      display_type: json |> field("display_type", string),
+      // display_type: json |> field("display_type", string),
+      display_type:
+        json
+        |> field("display_type", string)
+        |> (
+          (v) => (
+            switch (v) {
+            | "string" => String
+            | "integer" => Integer
+            | "float" => Float
+            | "list" => List
+            | "boolean" => Boolean
+            | "date" => Date
+            | "autosuggest" => Autosuggest
+            | unknownType =>
+              raise(
+                DecodeTypeException(
+                  "Missing type conversion case for field display_type: "
+                  ++ unknownType
+                  ++ ", JSON: "
+                  ++ Js.Json.stringify(json),
+                ),
+              )
+            }: displayType
+          )
+        ),
       ref_endpoint: json |> optional(field("ref_endpoint", string)),
       validators:
         json
@@ -110,7 +145,7 @@ module Field = {
     switch (field.vocabularies) {
     | Some(vocabularies) =>
       Belt.Array.getBy(vocabularies, v => v.key == rawValue)
-      |> Belt.Option.mapWithDefault(_, rawValue, v=>v.title)
+      |> Belt.Option.mapWithDefault(_, rawValue, v => v.title)
     | None => rawValue
     };
   };
@@ -138,7 +173,7 @@ module Resource = {
 
   let decodeMany = json => Json.Decode.(json |> array(decode));
 
-  let getField = (resource, fieldName) => {
+  let getField = (resource, fieldName): option(Field.t) => {
     resource.fields |> Array.getBy(_, field => field.name == fieldName);
   };
 };
@@ -277,13 +312,22 @@ let jsonArrayDecoder = Json.Decode.array(nullDecoder);
 module Encode = {
   exception UndefinedEncoder(string);
 
-  let encodeField = (field: Field.t, formValue: string): Js.Json.t =>
-    switch (field.data_type) {
-    | String => formValue |> Js.Json.string
-    | Integer => formValue |> float_of_string |> Js.Json.number
-    | Float => formValue |> float_of_string |> Js.Json.number
-    | Boolean => formValue |> bool_of_string |> Js.Json.boolean
-    | _ =>
-      raise(UndefinedEncoder({j|Encoder for "$field.name" is not defined|j}))
+  let encodeField = (field: Field.t, formValue: option(string)): Js.Json.t => {
+    let encode = value =>
+      switch (field.data_type) {
+      | String => value |> Js.Json.string
+      | Integer => value |> float_of_string |> Js.Json.number
+      | Float => value |> float_of_string |> Js.Json.number
+      | Boolean => value |> bool_of_string |> Js.Json.boolean
+      | _ =>
+        raise(
+          UndefinedEncoder({j|Encoder for "$field.name" is not defined|j}),
+        )
+      };
+
+    switch (formValue) {
+    | Some(value) => encode(value)
+    | None => Js.Json.null
     };
+  };
 };

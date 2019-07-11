@@ -30,8 +30,8 @@ let make =
 
   let (addState, setAddState) = React.useState(() => View);
 
-  let experimentResource =
-    Belt.Option.getExn(getFilledResource("experiment"));
+  // let experimentResource =
+  //   Belt.Option.getExn(getFilledResource("experiment"));
 
   let addExperiment = currentExperiments => {
     // Create the default values for the form
@@ -129,7 +129,10 @@ let make =
   | LoadFailure(msg) => str("Load failure: " ++ msg)
   | Loading => str("Loading project...")
   | LoadSuccess(entity) =>
-    // viewFunctionMap: field display overrides
+    Js.log2("LoadSuccess", entity);
+    let experimentResource =
+      Belt.Option.getExn(getFilledResource("experiment"));
+    // Create field display overrides using a "viewFunctionMap":
     // TODO: For demonstration only ( these examples can also be done using vocabulary)
     // TODO: demonstrate a similar "editFunctionMap" for custom editor implementations.
     let viewFunctionMap = Js.Dict.empty();
@@ -178,6 +181,10 @@ let make =
         refreshAction={_ => {
           setAddState(_ => View);
           fetchProject(projectId);
+        }}
+        saveAction={entity => {
+          // fetchEntities(`project);
+          Js.log2("new entity recorded: ", entity);
         }}
         viewFunctionMap>
         {switch (addState) {

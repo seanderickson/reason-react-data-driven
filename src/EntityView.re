@@ -17,6 +17,7 @@ let make =
       ~refreshAction=_ => (),
       ~viewFunctionMap=(Js.Dict.empty(): Js.Dict.t(Js.Json.t => string)),
       ~children=ReasonReact.null,
+      ~saveAction=?,
     ) => {
   // Entity state
 
@@ -57,30 +58,57 @@ let make =
   let showEntity = entity => {
     switch (editState) {
     | Edit =>
-      <EditView
-        key={resource.name ++ "-edit-" ++ entityId}
-        resource
-        id=entityId
-        entity
-        refreshAction={_ => {
-          // Note: pushing a route alone will not remount this component and
-          // reset the state; but it will set a new urlStack prop. Therefore,
-          // useEffect is used to fetch when either the component is mounted,
-          // or when the urlStack prop is updated.
-          // ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ entityId)
-          setEditState(_ => View);
+      switch (saveAction) {
+      | Some(actionFun) =>
+        <EditView
+          key={resource.name ++ "-edit-" ++ entityId}
+          resource
+          id=entityId
+          entity
+          refreshAction={_ => {
+            // Note: pushing a route alone will not remount this component and
+            // reset the state; but it will set a new urlStack prop. Therefore,
+            // useEffect is used to fetch when either the component is mounted,
+            // or when the urlStack prop is updated.
+            // ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ entityId)
+            setEditState(_ => View);
 
-          // NOTE: creates error:
-          // Warning: Can't perform a React state update on an unmounted component
-          // fetchEntity(resource, entityId);
-          
-          refreshAction();
-        }}
-      />
+            // NOTE: creates error:
+            // Warning: Can't perform a React state update on an unmounted component
+            // fetchEntity(resource, entityId);
+
+            refreshAction();
+          }}
+          saveAction=actionFun
+        />
+
+      | None =>
+        <EditView
+          key={resource.name ++ "-edit-" ++ entityId}
+          resource
+          id=entityId
+          entity
+          refreshAction={_ => {
+            // Note: pushing a route alone will not remount this component and
+            // reset the state; but it will set a new urlStack prop. Therefore,
+            // useEffect is used to fetch when either the component is mounted,
+            // or when the urlStack prop is updated.
+            // ReasonReactRouter.push("/" ++ resource.name ++ "/" ++ entityId)
+            setEditState(_ => View);
+
+            // NOTE: creates error:
+            // Warning: Can't perform a React state update on an unmounted component
+            // fetchEntity(resource, entityId);
+
+            refreshAction();
+          }}
+        />
+      }
     | View =>
       <div>
         <h3>
           <button
+            className="btn btn-gray"
             onClick={_ =>
               // ReasonReactRouter.push(
               //   "/" ++ resource.name ++ "/" ++ entityId ++ "/edit",

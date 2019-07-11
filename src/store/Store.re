@@ -3,13 +3,12 @@
   - Resource:  API resources,
   - Field: individual fields to be displayed
   - Vocabulary: values and titles for vocabularies
-  
-  React context design is based on these examples: 
+
+  React context design is based on these examples:
     https://kentcdodds.com/blog/application-state-management-with-react
   - and this adaptation for reason-react:
-    https://github.com/mixvar/reason-react-context-playground 
+    https://github.com/mixvar/reason-react-context-playground
  */
-
 open Belt;
 open Metadata;
 
@@ -29,7 +28,7 @@ module ResourceContext = {
   type t = {
     resourceState,
     fetchResources: unit => unit,
-    getResources: unit => (option(Resource.resources)),
+    getResources: unit => option(Resource.resources),
     getResource: string => option(Resource.t),
   };
 
@@ -38,10 +37,7 @@ module ResourceContext = {
   module Provider = {
     [@react.component]
     let make = (~children) => {
-
       let (resourceState, setResourceState) = React.useState(() => NotAsked);
-
-      Js.log2("Store initial resourceState: ", resourceState);
 
       let fetchResources = () => {
         setResourceState(_ => Loading);
@@ -65,22 +61,21 @@ module ResourceContext = {
         | _ => None
         };
 
-      let getResource = resourceName =>{
-        Js.log3("1 getResource: ", resourceName, resourceState);
+      let getResource = (resourceName): option(Resource.t) => {
         switch (resourceState) {
         | LoadSuccess(resources) =>
           resources->Belt.Option.flatMap(rlist =>
             rlist->Belt.Array.getBy(resource => resource.name == resourceName)
           )
         | _ => None
-        }};
+        };
+      };
 
       React.useEffect0(() => {
         Js.log("Initial fetch...");
         fetchResources();
         Some(() => Js.log("cleanup Effect"));
       });
-
 
       let ctx: option(t) =
         Some({resourceState, fetchResources, getResources, getResource})

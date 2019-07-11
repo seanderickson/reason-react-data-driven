@@ -53,8 +53,16 @@ let make = () => {
       | _ => false
       };
 
-    <ul key="resources">
+    let example: Metadata.Resource.t = {
+      id: 999,
+      name: "examples",
+      title: "Examples",
+      description: "For testing",
+      fields: [||],
+    };
+    <ul className="m-3" key="resources">
       {resources
+       |> Array.concat(_, [|example|])
        |> Array.map(_, resource =>
             <li key={resource.name}>
               <Link
@@ -69,16 +77,20 @@ let make = () => {
   };
 
   let printContent = () => {
-    <div key="content" className="content">
+    <div key="content" className="content m-3">
       {switch (route.path) {
        | [] => ReasonReact.null
        | [resourceName] =>
-         let foundResource = getFilledResource(resourceName);
-         switch (foundResource) {
-         | Some(resource) =>
-           <EntityListingTable key={resource.name} resource />
-         | None => str("Unknown resource: " ++ resourceName)
-         };
+         switch (resourceName) {
+         | "examples" => <ExamplesView />
+         | _ =>
+           let foundResource = getFilledResource(resourceName);
+           switch (foundResource) {
+           | Some(resource) =>
+             <EntityListingTable key={resource.name} resource />
+           | None => str("Unknown resource: " ++ resourceName)
+           };
+         }
        | [resourceName, entityId, ...tail] =>
          let foundResource = getFilledResource(resourceName);
          switch (foundResource) {

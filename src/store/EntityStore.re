@@ -18,8 +18,9 @@ let debug_mode = false;
 // entityType: one for each API entity;
 // use a polymorphic variant: the jsConverter will generate the
 // "entityTypeFromJs" and "entityTypeToJs" functions.
+// TODO: Not complete listing of resources
 [@bs.deriving jsConverter]
-type entityType = [ | `microscope | `person | `irb];
+type entityType = [ | `microscope | `person | `irb | `project | `experiment];
 
 // Note: jsConverter with ordinary variants translates to integer values:
 // [@bs.deriving jsConverter]
@@ -64,6 +65,8 @@ module ResourceContext = {
         | `microscope => Microscope.getId(json)
         | `person => Person.getId(json)
         | `irb => Irb.getId(json)
+        | `project => Project.getId(json)
+        | `experiment => Experiment.getId(json)
         };
 
       let (entityStoreState, dispatchState) =
@@ -76,13 +79,7 @@ module ResourceContext = {
               }
             | LoadSuccess(entityType, optionalArray) =>
               switch (optionalArray) {
-              | Some(entityList) =>
-                Js.log3(
-                  "got entityList",
-                  entityTypeToJs(entityType),
-                  entityList,
-                );
-                {
+              | Some(entityList) => {
                   webLoadingState: LoadSuccess(entityType, optionalArray),
                   store:
                     Belt.Map.String.set(
@@ -94,7 +91,7 @@ module ResourceContext = {
                         ),
                       ),
                     ),
-                };
+                }
               | None => {
                   webLoadingState: LoadSuccess(entityType, optionalArray),
                   store: Belt.Map.String.empty,
@@ -135,7 +132,7 @@ module ResourceContext = {
       };
 
       let fetchDefaultEntities = () => {
-        let entities = [|`person, `microscope, `irb|];
+        let entities = [|`person, `microscope, `irb, `project|];
         Js.Promise.all(
           entities |> Js.Array.map(etype => fetchEntities(etype)),
         )
@@ -174,6 +171,35 @@ module ResourceContext = {
         );
       };
 
+      let getAutosuggestScientistVocabulary = () => {
+        let field: Field.t =
+          getResource("project")
+          |> Belt.Option.flatMap(_, r =>
+               Resource.getField(r, "scientist_samples")
+             )
+          |> Belt.Option.getExn;
+        let result =
+          Belt.Option.map(getEntities(`project), entityMap =>
+            Belt.Map.String.valuesToArray(entityMap)
+            |> Belt.Array.map(_, json => Metadata.fieldDecoder(json, field))
+            |> Belt.Set.String.fromArray
+            |> Belt.Set.String.toArray
+            |> Belt.Array.map(
+                 _,
+                 scientist_samples => {
+                   let r: Vocabulary.t = {
+                     scope: "autosuggest.scientist",
+                     key: scientist_samples,
+                     title: scientist_samples,
+                     description: None,
+                   };
+                   r;
+                 },
+               )
+          );
+        result;
+      };
+
       let getIrbVocabulary = () => {
         Belt.Option.map(getEntities(`irb), entityMap =>
           Belt.Map.String.valuesToArray(entityMap)
@@ -195,27 +221,38 @@ module ResourceContext = {
 
       // Update Resource data with vocabularies for person, irb, etc.
       let getFilledResource = entityName => {
+        Js.log2("getFilledResource: ", entityName);
         getResource(entityName)
         |> Belt.Option.map(_, originalResource =>
              {
                ...originalResource,
                fields:
-                 Belt.Array.map(originalResource.fields, field =>
-                   switch (field.vocab_scope) {
-                   | Some(vocab_scope) =>
-                     switch (vocab_scope) {
-                     | "person.id" => {
-                         ...field,
-                         vocabularies: getUserVocabulary(),
-                       }
-                     | "irb.id" => {
-                         ...field,
-                         vocabularies: getIrbVocabulary(),
+                 Belt.Array.map(
+                   originalResource.fields,
+                   field => {
+                     if (debug_mode) {
+                       Js.log3("fill field", entityName, field.name);
+                     };
+                     switch (field.vocab_scope) {
+                     | Some(vocab_scope) =>
+                       switch (vocab_scope) {
+                       | "person.id" => {
+                           ...field,
+                           vocabularies: getUserVocabulary(),
+                         }
+                       | "irb.id" => {
+                           ...field,
+                           vocabularies: getIrbVocabulary(),
+                         }
+                       | "autosuggest.scientist" => {
+                           ...field,
+                           vocabularies: getAutosuggestScientistVocabulary(),
+                         }
+                       | _ => field
                        }
                      | _ => field
-                     }
-                   | _ => field
-                   }
+                     };
+                   },
                  ),
              }
            );
@@ -228,9 +265,11 @@ module ResourceContext = {
       });
 
       // Memoize because of dependency on resourceState
-      let ctx: option(t) =
-        Some({entityStoreState, fetchEntities, getEntity, getFilledResource})
-        |> (it => React.useMemo1(() => it, [|resourceState|]));
+      let ctx =
+        Some({entityStoreState, fetchEntities, getEntity, getFilledResource});
+      // let ctx: option(t) =
+      //   Some({entityStoreState, fetchEntities, getEntity, getFilledResource})
+      //   |> (it => React.useMemo1(() => it, [|resourceState|]));
 
       Common.reactContextProvider(
         ~children,
