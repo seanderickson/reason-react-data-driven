@@ -141,8 +141,15 @@ let make =
     Js.Dict.get(getUpdatedEntity(), field.name)
     |> Belt.Option.flatMap(_, v => v == Js.Json.null ? None : Some(v));
 
-  let isFieldModified = (field: Field.t) =>
+  let isFieldModified = (field: Field.t) => {
+    Js.log4(
+      "isFieldModified",
+      getCurrentFieldValue(field),
+      getInitialFieldValue(field),
+      getCurrentFieldValue(field) != getInitialFieldValue(field),
+    );
     getCurrentFieldValue(field) != getInitialFieldValue(field);
+  };
 
   let updateField = (field: Field.t, value: option(string)) => {
     Js.log3("updateField", field.name, value);
@@ -243,7 +250,7 @@ let make =
         <label
           className={
             "font-bold text-right"
-            ++ (isFieldModified(field) ? " bg-orange" : "")
+            ++ (isFieldModified(field) ? " bg-orange-300" : "")
           }
           htmlFor={"inline-" ++ field.name}>
           {str(field.title ++ ": ")}
@@ -316,11 +323,11 @@ let make =
                className=tailwindInputWrapperClasses
                classNamePrefix="react_select"
                options
-               onChange={suggestion => {
+               onChange={suggestion =>
                  Js.Nullable.toOption(suggestion)
                  |> Belt.Option.map(_, v => ReactSelect.valueGet(v))
-                 |> updateField(field);
-               }}
+                 |> updateField(field)
+               }
                value=suggestionValue
                isClearable={!isRequired}
                placeholder="Select a value..."
