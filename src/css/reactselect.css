@@ -1,0 +1,20 @@
+.react_select__control * {
+  padding-top: 1px  !important;
+  padding-bottom: 1px !important;
+  margin: 0px  !important;
+  min-height: 0px  !important;
+}
+div.react_select__control {
+  min-height: 16px;
+}
+div.react_select__menu * {
+  padding-top: 1px;
+  padding-bottom: 1px;
+  margin: 2px ;
+  min-height: 16px;
+}
+
+div.react_select__multi-value {
+  margin-left: 2px !important;
+  margin-right: 2px !important;
+}

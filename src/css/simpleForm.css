@@ -2,7 +2,6 @@
 
 @tailwind components;
 
-@tailwind utilities;
 
 .selected {
   background-color: lightblue;
@@ -17,6 +16,46 @@
 
 .content {
   width: 100%;
+}
+
+input {
+  box-sizing: border-box;
+}
+
+.btn {
+  @apply font-bold text-sm py-1 px-1 rounded mr-1 my-1 border-solid border-2;
+}
+
+.btn-blue {
+  @apply bg-blue-500 text-white;
+}
+.btn-blue:hover {
+  @apply bg-blue-700;
+}
+
+.btn-gray {
+  @apply bg-gray-400 text-gray-800;
+}
+.btn-gray:hover {
+  @apply bg-gray-300;
+}
+
+a {
+  @apply text-blue-800;
+}
+
+a:hover {
+  @apply underline;
+}
+
+@tailwind utilities;
+
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container {
+  display: unset;
 }
 
 /* form {
@@ -64,6 +103,10 @@
     display: grid;
     grid-template-columns: 1fr 3fr;
     justify-items: left;
+  }
+
+  input {
+    padding: 2px 4px 2px 4px;
   }
 }
 
