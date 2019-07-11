@@ -62,21 +62,27 @@
     }, 
     {
       "id": 11, 
-      "name": "cycle", 
-      "title": "Cycle", 
-      "description": "Record of one staining and imaging cycle with multiple channels"
-    }, 
-    {
-      "id": 12, 
       "name": "microscope", 
       "title": "Microscope", 
       "description": "Microscope description with channels"
     }, 
     {
-      "id": 13, 
+      "id": 12, 
       "name": "channel", 
       "title": "Channel", 
       "description": "A wavelength delimited channel measured from a sample by the microscope"
+    }, 
+    {
+      "id": 13, 
+      "name": "cycle_image", 
+      "title": "Cycle Image", 
+      "description": "Record of one staining and imaging cycle with multiple channels"
+    }, 
+    {
+      "id": 14, 
+      "name": "cycle_image_channel", 
+      "title": "Image Channel", 
+      "description": "One channel of an image for one cycle"
     }
   ], 
   "field": [
@@ -458,7 +464,7 @@
       "ref_endpoint": "person", 
       "validators": null, 
       "editable": true, 
-      "vocab_scope": null, 
+      "vocab_scope": "person.id", 
       "list_ordinal": 3, 
       "detail_ordinal": 3
     }, 
@@ -538,7 +544,7 @@
       "title": "Type", 
       "description": "Type of IRB", 
       "data_type": "string", 
-      "display_type": "vocabulary", 
+      "display_type": "string", 
       "ref_endpoint": null, 
       "validators": null, 
       "editable": true, 
@@ -570,7 +576,7 @@
       "ref_endpoint": "irb", 
       "validators": null, 
       "editable": true, 
-      "vocab_scope": null, 
+      "vocab_scope": "irb.id", 
       "list_ordinal": 6, 
       "detail_ordinal": 6
     }, 
@@ -610,9 +616,11 @@
       "data_type": "integer", 
       "display_type": "string", 
       "ref_endpoint": "person", 
-      "validators": null, 
+      "validators": [
+        "required"
+      ], 
       "editable": true, 
-      "vocab_scope": null, 
+      "vocab_scope": "person.id", 
       "list_ordinal": 3, 
       "detail_ordinal": 3
     }, 
@@ -624,9 +632,11 @@
       "data_type": "integer", 
       "display_type": "string", 
       "ref_endpoint": "irb", 
-      "validators": null, 
+      "validators": [
+        "required"
+      ], 
       "editable": true, 
-      "vocab_scope": null, 
+      "vocab_scope": "irb.id", 
       "list_ordinal": 4, 
       "detail_ordinal": 4
     }, 
@@ -640,7 +650,7 @@
       "ref_endpoint": "irb", 
       "validators": null, 
       "editable": true, 
-      "vocab_scope": null, 
+      "vocab_scope": "irb.id", 
       "list_ordinal": 5, 
       "detail_ordinal": 5
     }, 
@@ -664,11 +674,11 @@
       "title": "Scientist samples received from", 
       "description": "Scientist samples received from", 
       "data_type": "string", 
-      "display_type": "string", 
+      "display_type": "autosuggest", 
       "ref_endpoint": null, 
       "validators": null, 
       "editable": true, 
-      "vocab_scope": null, 
+      "vocab_scope": "autosuggest.scientist", 
       "list_ordinal": 7, 
       "detail_ordinal": 7
     }, 
@@ -738,7 +748,7 @@
       "ref_endpoint": null, 
       "validators": null, 
       "editable": true, 
-      "vocab_scope": null, 
+      "vocab_scope": "sample.organism", 
       "list_ordinal": 12, 
       "detail_ordinal": 12
     }, 
@@ -839,6 +849,20 @@
       "vocab_scope": null, 
       "list_ordinal": 4, 
       "detail_ordinal": 4
+    }, 
+    {
+      "name": "microscope_id", 
+      "resource_name": "experiment", 
+      "title": "Microscope ID", 
+      "description": "Microscope ID", 
+      "data_type": "string", 
+      "display_type": "string", 
+      "ref_endpoint": "microscope", 
+      "validators": null, 
+      "editable": true, 
+      "vocab_scope": null, 
+      "list_ordinal": 5, 
+      "detail_ordinal": 5
     }, 
     {
       "name": "slide_id", 
@@ -1043,7 +1067,7 @@
       "description": "Microscope ID", 
       "data_type": "integer", 
       "display_type": "integer", 
-      "ref_endpoint": null, 
+      "ref_endpoint": "microscope", 
       "validators": null, 
       "editable": false, 
       "vocab_scope": null, 
@@ -1058,11 +1082,45 @@
       "data_type": "string", 
       "display_type": "string", 
       "ref_endpoint": null, 
-      "validators": null, 
+      "validators": [
+        "required"
+      ], 
       "editable": true, 
       "vocab_scope": null, 
       "list_ordinal": 2, 
       "detail_ordinal": 2
+    }, 
+    {
+      "name": "magnification", 
+      "resource_name": "microscope", 
+      "title": "Magnification", 
+      "description": "Magnification", 
+      "data_type": "integer", 
+      "display_type": "integer", 
+      "ref_endpoint": null, 
+      "validators": [
+        "required"
+      ], 
+      "editable": true, 
+      "vocab_scope": null, 
+      "list_ordinal": 3, 
+      "detail_ordinal": 3
+    }, 
+    {
+      "name": "channels", 
+      "resource_name": "microscope", 
+      "title": "Channels", 
+      "description": "Number of channels", 
+      "data_type": "integer", 
+      "display_type": "integer", 
+      "ref_endpoint": null, 
+      "validators": [
+        "required"
+      ], 
+      "editable": true, 
+      "vocab_scope": null, 
+      "list_ordinal": 4, 
+      "detail_ordinal": 4
     }, 
     {
       "name": "id", 
@@ -1071,7 +1129,7 @@
       "description": "Channel ID", 
       "data_type": "integer", 
       "display_type": "integer", 
-      "ref_endpoint": null, 
+      "ref_endpoint": "channel", 
       "validators": null, 
       "editable": false, 
       "vocab_scope": null, 
@@ -1086,11 +1144,229 @@
       "data_type": "integer", 
       "display_type": "integer", 
       "ref_endpoint": null, 
+      "validators": [
+        "required"
+      ], 
+      "editable": false, 
+      "vocab_scope": null, 
+      "list_ordinal": 2, 
+      "detail_ordinal": 2
+    }, 
+    {
+      "name": "filter", 
+      "resource_name": "channel", 
+      "title": "Filter", 
+      "description": "Filter", 
+      "data_type": "string", 
+      "display_type": "string", 
+      "ref_endpoint": null, 
+      "validators": [
+        "required"
+      ], 
+      "editable": true, 
+      "vocab_scope": "channel.filter", 
+      "list_ordinal": 3, 
+      "detail_ordinal": 3
+    }, 
+    {
+      "name": "reagent_id", 
+      "resource_name": "channel", 
+      "title": "Reagent ID", 
+      "description": "Reagent ID (from Reagent Tracker)", 
+      "data_type": "string", 
+      "display_type": "string", 
+      "ref_endpoint": null, 
+      "validators": [
+        "required"
+      ], 
+      "editable": true, 
+      "vocab_scope": null, 
+      "list_ordinal": 4, 
+      "detail_ordinal": 4
+    }, 
+    {
+      "name": "experiment_id", 
+      "resource_name": "channel", 
+      "title": "Experiment ID", 
+      "description": "Experiment ID", 
+      "data_type": "string", 
+      "display_type": "string", 
+      "ref_endpoint": null, 
+      "validators": [
+        "required"
+      ], 
+      "editable": true, 
+      "vocab_scope": null, 
+      "list_ordinal": 5, 
+      "detail_ordinal": 5
+    }, 
+    {
+      "name": "id", 
+      "resource_name": "cycle_image", 
+      "title": "ID", 
+      "description": "ID", 
+      "data_type": "string", 
+      "display_type": "string", 
+      "ref_endpoint": null, 
+      "validators": null, 
+      "editable": false, 
+      "vocab_scope": null, 
+      "list_ordinal": 1, 
+      "detail_ordinal": 1
+    }, 
+    {
+      "name": "ordinal", 
+      "resource_name": "cycle_image", 
+      "title": "Ordinal", 
+      "description": "Ordinal", 
+      "data_type": "integer", 
+      "display_type": "integer", 
+      "ref_endpoint": null, 
+      "validators": null, 
+      "editable": true, 
+      "vocab_scope": null, 
+      "list_ordinal": 2, 
+      "detail_ordinal": 2
+    }, 
+    {
+      "name": "experiment_id", 
+      "resource_name": "cycle_image", 
+      "title": "Experiment ID", 
+      "description": "Experiment ID", 
+      "data_type": "string", 
+      "display_type": "string", 
+      "ref_endpoint": "experiment", 
+      "validators": null, 
+      "editable": true, 
+      "vocab_scope": null, 
+      "list_ordinal": 3, 
+      "detail_ordinal": 3
+    }, 
+    {
+      "name": "date_started", 
+      "resource_name": "cycle_image", 
+      "title": "Date Imaging Started", 
+      "description": "Date Imaging Started", 
+      "data_type": "string", 
+      "display_type": "date", 
+      "ref_endpoint": null, 
+      "validators": null, 
+      "editable": true, 
+      "vocab_scope": null, 
+      "list_ordinal": 4, 
+      "detail_ordinal": 4
+    }, 
+    {
+      "name": "purpose", 
+      "resource_name": "cycle_image", 
+      "title": "Purpose", 
+      "description": "Purpose", 
+      "data_type": "string", 
+      "display_type": "string", 
+      "ref_endpoint": null, 
+      "validators": null, 
+      "editable": false, 
+      "vocab_scope": "cycle_image.purpose", 
+      "list_ordinal": 5, 
+      "detail_ordinal": 5
+    }, 
+    {
+      "name": "protocol", 
+      "resource_name": "cycle_image", 
+      "title": "Protocol", 
+      "description": "Protocol", 
+      "data_type": "string", 
+      "display_type": "string", 
+      "ref_endpoint": null, 
+      "validators": null, 
+      "editable": false, 
+      "vocab_scope": "cycle_image.protocol", 
+      "list_ordinal": 6, 
+      "detail_ordinal": 6
+    }, 
+    {
+      "name": "id", 
+      "resource_name": "cycle_image_channel", 
+      "title": "ID", 
+      "description": "ID", 
+      "data_type": "integer", 
+      "display_type": "integer", 
+      "ref_endpoint": null, 
+      "validators": null, 
+      "editable": false, 
+      "vocab_scope": null, 
+      "list_ordinal": 1, 
+      "detail_ordinal": 1
+    }, 
+    {
+      "name": "cycle_image_id", 
+      "resource_name": "cycle_image_channel", 
+      "title": "Cycle Image ID", 
+      "description": "Cycle Image ID", 
+      "data_type": "integer", 
+      "display_type": "integer", 
+      "ref_endpoint": null, 
       "validators": null, 
       "editable": false, 
       "vocab_scope": null, 
       "list_ordinal": 2, 
       "detail_ordinal": 2
+    }, 
+    {
+      "name": "channel_id", 
+      "resource_name": "cycle_image_channel", 
+      "title": "Channel ID", 
+      "description": "Channel ID", 
+      "data_type": "integer", 
+      "display_type": "integer", 
+      "ref_endpoint": "channel", 
+      "validators": null, 
+      "editable": false, 
+      "vocab_scope": null, 
+      "list_ordinal": 3, 
+      "detail_ordinal": 3
+    }, 
+    {
+      "name": "dilution", 
+      "resource_name": "cycle_image_channel", 
+      "title": "Dilution", 
+      "description": "Dilution", 
+      "data_type": "integer", 
+      "display_type": "integer", 
+      "ref_endpoint": null, 
+      "validators": null, 
+      "editable": false, 
+      "vocab_scope": null, 
+      "list_ordinal": 4, 
+      "detail_ordinal": 4
+    }, 
+    {
+      "name": "exposure_time", 
+      "resource_name": "cycle_image_channel", 
+      "title": "Exposure Time (min)", 
+      "description": "Exposure Time (min)", 
+      "data_type": "float", 
+      "display_type": "float", 
+      "ref_endpoint": null, 
+      "validators": null, 
+      "editable": false, 
+      "vocab_scope": null, 
+      "list_ordinal": 5, 
+      "detail_ordinal": 5
+    }, 
+    {
+      "name": "comment", 
+      "resource_name": "cycle_image_channel", 
+      "title": "Comment", 
+      "description": "Comment", 
+      "data_type": "string", 
+      "display_type": "string", 
+      "ref_endpoint": null, 
+      "validators": null, 
+      "editable": false, 
+      "vocab_scope": null, 
+      "list_ordinal": 6, 
+      "detail_ordinal": 6
     }
   ], 
   "vocabulary": [
@@ -1108,6 +1384,11 @@
       "scope": "channel.filter", 
       "key": "cy3", 
       "title": "CY3"
+    }, 
+    {
+      "scope": "channel.filter", 
+      "key": "cy5", 
+      "title": "CY5"
     }, 
     {
       "scope": "channel.filter", 
@@ -1383,7 +1664,7 @@
       "secondary_irb_id": null
     }, 
     {
-      "id": 5, 
+      "id": 7, 
       "irb_id": "11-104", 
       "funding_ids": [
         "3"
@@ -1396,8 +1677,8 @@
   "sample": [
     {
       "slide_id": "1", 
-      "checkout_date": "43476.0", 
-      "inventory_date": "43477.0", 
+      "checkout_date": "2019-01-11", 
+      "inventory_date": "2019-01-12", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1412,8 +1693,8 @@
     }, 
     {
       "slide_id": "2", 
-      "checkout_date": "43477.0", 
-      "inventory_date": "43478.0", 
+      "checkout_date": "2019-01-12", 
+      "inventory_date": "2019-01-13", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1428,8 +1709,8 @@
     }, 
     {
       "slide_id": "3", 
-      "checkout_date": "43478.0", 
-      "inventory_date": "43479.0", 
+      "checkout_date": "2019-01-13", 
+      "inventory_date": "2019-01-14", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1444,8 +1725,8 @@
     }, 
     {
       "slide_id": "4", 
-      "checkout_date": "43479.0", 
-      "inventory_date": "43480.0", 
+      "checkout_date": "2019-01-14", 
+      "inventory_date": "2019-01-15", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1460,8 +1741,8 @@
     }, 
     {
       "slide_id": "5", 
-      "checkout_date": "43480.0", 
-      "inventory_date": "43481.0", 
+      "checkout_date": "2019-01-15", 
+      "inventory_date": "2019-01-16", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1476,8 +1757,8 @@
     }, 
     {
       "slide_id": "6", 
-      "checkout_date": "43481.0", 
-      "inventory_date": "43482.0", 
+      "checkout_date": "2019-01-16", 
+      "inventory_date": "2019-01-17", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1492,8 +1773,8 @@
     }, 
     {
       "slide_id": "7", 
-      "checkout_date": "43482.0", 
-      "inventory_date": "43483.0", 
+      "checkout_date": "2019-01-17", 
+      "inventory_date": "2019-01-18", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1508,8 +1789,8 @@
     }, 
     {
       "slide_id": "8", 
-      "checkout_date": "43483.0", 
-      "inventory_date": "43484.0", 
+      "checkout_date": "2019-01-18", 
+      "inventory_date": "2019-01-19", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1524,8 +1805,8 @@
     }, 
     {
       "slide_id": "9", 
-      "checkout_date": "43484.0", 
-      "inventory_date": "43485.0", 
+      "checkout_date": "2019-01-19", 
+      "inventory_date": "2019-01-20", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1540,8 +1821,8 @@
     }, 
     {
       "slide_id": "10", 
-      "checkout_date": "43485.0", 
-      "inventory_date": "43486.0", 
+      "checkout_date": "2019-01-20", 
+      "inventory_date": "2019-01-21", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1556,8 +1837,8 @@
     }, 
     {
       "slide_id": "11", 
-      "checkout_date": "43486.0", 
-      "inventory_date": "43487.0", 
+      "checkout_date": "2019-01-21", 
+      "inventory_date": "2019-01-22", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1572,8 +1853,8 @@
     }, 
     {
       "slide_id": "12", 
-      "checkout_date": "43487.0", 
-      "inventory_date": "43488.0", 
+      "checkout_date": "2019-01-22", 
+      "inventory_date": "2019-01-23", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1588,8 +1869,8 @@
     }, 
     {
       "slide_id": "13", 
-      "checkout_date": "43488.0", 
-      "inventory_date": "43489.0", 
+      "checkout_date": "2019-01-23", 
+      "inventory_date": "2019-01-24", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1604,8 +1885,8 @@
     }, 
     {
       "slide_id": "14", 
-      "checkout_date": "43489.0", 
-      "inventory_date": "43490.0", 
+      "checkout_date": "2019-01-24", 
+      "inventory_date": "2019-01-25", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1620,8 +1901,8 @@
     }, 
     {
       "slide_id": "15", 
-      "checkout_date": "43490.0", 
-      "inventory_date": "43491.0", 
+      "checkout_date": "2019-01-25", 
+      "inventory_date": "2019-01-26", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1636,8 +1917,8 @@
     }, 
     {
       "slide_id": "16", 
-      "checkout_date": "43491.0", 
-      "inventory_date": "43492.0", 
+      "checkout_date": "2019-01-26", 
+      "inventory_date": "2019-01-27", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1652,8 +1933,8 @@
     }, 
     {
       "slide_id": "17", 
-      "checkout_date": "43492.0", 
-      "inventory_date": "43493.0", 
+      "checkout_date": "2019-01-27", 
+      "inventory_date": "2019-01-28", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1668,8 +1949,8 @@
     }, 
     {
       "slide_id": "18", 
-      "checkout_date": "43493.0", 
-      "inventory_date": "43494.0", 
+      "checkout_date": "2019-01-28", 
+      "inventory_date": "2019-01-29", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1684,8 +1965,8 @@
     }, 
     {
       "slide_id": "19", 
-      "checkout_date": "43494.0", 
-      "inventory_date": "43495.0", 
+      "checkout_date": "2019-01-29", 
+      "inventory_date": "2019-01-30", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1700,8 +1981,8 @@
     }, 
     {
       "slide_id": "20", 
-      "checkout_date": "43495.0", 
-      "inventory_date": "43496.0", 
+      "checkout_date": "2019-01-30", 
+      "inventory_date": "2019-01-31", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1716,8 +1997,8 @@
     }, 
     {
       "slide_id": "21", 
-      "checkout_date": "43496.0", 
-      "inventory_date": "43497.0", 
+      "checkout_date": "2019-01-31", 
+      "inventory_date": "2019-02-01", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1732,8 +2013,8 @@
     }, 
     {
       "slide_id": "22", 
-      "checkout_date": "43497.0", 
-      "inventory_date": "43498.0", 
+      "checkout_date": "2019-02-01", 
+      "inventory_date": "2019-02-02", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1748,8 +2029,8 @@
     }, 
     {
       "slide_id": "23", 
-      "checkout_date": "43498.0", 
-      "inventory_date": "43499.0", 
+      "checkout_date": "2019-02-02", 
+      "inventory_date": "2019-02-03", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1764,8 +2045,8 @@
     }, 
     {
       "slide_id": "24", 
-      "checkout_date": "43499.0", 
-      "inventory_date": "43500.0", 
+      "checkout_date": "2019-02-03", 
+      "inventory_date": "2019-02-04", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1780,8 +2061,8 @@
     }, 
     {
       "slide_id": "25", 
-      "checkout_date": "43500.0", 
-      "inventory_date": "43501.0", 
+      "checkout_date": "2019-02-04", 
+      "inventory_date": "2019-02-05", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1796,8 +2077,8 @@
     }, 
     {
       "slide_id": "26", 
-      "checkout_date": "43501.0", 
-      "inventory_date": "43502.0", 
+      "checkout_date": "2019-02-05", 
+      "inventory_date": "2019-02-06", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1812,8 +2093,8 @@
     }, 
     {
       "slide_id": "27", 
-      "checkout_date": "43502.0", 
-      "inventory_date": "43503.0", 
+      "checkout_date": "2019-02-06", 
+      "inventory_date": "2019-02-07", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1828,8 +2109,8 @@
     }, 
     {
       "slide_id": "28", 
-      "checkout_date": "43503.0", 
-      "inventory_date": "43504.0", 
+      "checkout_date": "2019-02-07", 
+      "inventory_date": "2019-02-08", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1844,8 +2125,8 @@
     }, 
     {
       "slide_id": "29", 
-      "checkout_date": "43504.0", 
-      "inventory_date": "43505.0", 
+      "checkout_date": "2019-02-08", 
+      "inventory_date": "2019-02-09", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1860,8 +2141,8 @@
     }, 
     {
       "slide_id": "30", 
-      "checkout_date": "43505.0", 
-      "inventory_date": "43506.0", 
+      "checkout_date": "2019-02-09", 
+      "inventory_date": "2019-02-10", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1876,8 +2157,8 @@
     }, 
     {
       "slide_id": "31", 
-      "checkout_date": "43506.0", 
-      "inventory_date": "43507.0", 
+      "checkout_date": "2019-02-10", 
+      "inventory_date": "2019-02-11", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1892,8 +2173,8 @@
     }, 
     {
       "slide_id": "32", 
-      "checkout_date": "43507.0", 
-      "inventory_date": "43508.0", 
+      "checkout_date": "2019-02-11", 
+      "inventory_date": "2019-02-12", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1908,8 +2189,8 @@
     }, 
     {
       "slide_id": "33", 
-      "checkout_date": "43508.0", 
-      "inventory_date": "43509.0", 
+      "checkout_date": "2019-02-12", 
+      "inventory_date": "2019-02-13", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1924,8 +2205,8 @@
     }, 
     {
       "slide_id": "34", 
-      "checkout_date": "43509.0", 
-      "inventory_date": "43510.0", 
+      "checkout_date": "2019-02-13", 
+      "inventory_date": "2019-02-14", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1940,8 +2221,8 @@
     }, 
     {
       "slide_id": "35", 
-      "checkout_date": "43510.0", 
-      "inventory_date": "43511.0", 
+      "checkout_date": "2019-02-14", 
+      "inventory_date": "2019-02-15", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1956,8 +2237,8 @@
     }, 
     {
       "slide_id": "36", 
-      "checkout_date": "43511.0", 
-      "inventory_date": "43512.0", 
+      "checkout_date": "2019-02-15", 
+      "inventory_date": "2019-02-16", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1972,8 +2253,8 @@
     }, 
     {
       "slide_id": "37", 
-      "checkout_date": "43512.0", 
-      "inventory_date": "43513.0", 
+      "checkout_date": "2019-02-16", 
+      "inventory_date": "2019-02-17", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -1988,8 +2269,8 @@
     }, 
     {
       "slide_id": "38", 
-      "checkout_date": "43513.0", 
-      "inventory_date": "43514.0", 
+      "checkout_date": "2019-02-17", 
+      "inventory_date": "2019-02-18", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2004,8 +2285,8 @@
     }, 
     {
       "slide_id": "39", 
-      "checkout_date": "43514.0", 
-      "inventory_date": "43515.0", 
+      "checkout_date": "2019-02-18", 
+      "inventory_date": "2019-02-19", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2020,8 +2301,8 @@
     }, 
     {
       "slide_id": "40", 
-      "checkout_date": "43515.0", 
-      "inventory_date": "43516.0", 
+      "checkout_date": "2019-02-19", 
+      "inventory_date": "2019-02-20", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2036,8 +2317,8 @@
     }, 
     {
       "slide_id": "41", 
-      "checkout_date": "43516.0", 
-      "inventory_date": "43517.0", 
+      "checkout_date": "2019-02-20", 
+      "inventory_date": "2019-02-21", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2052,8 +2333,8 @@
     }, 
     {
       "slide_id": "42", 
-      "checkout_date": "43517.0", 
-      "inventory_date": "43518.0", 
+      "checkout_date": "2019-02-21", 
+      "inventory_date": "2019-02-22", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2068,8 +2349,8 @@
     }, 
     {
       "slide_id": "43", 
-      "checkout_date": "43518.0", 
-      "inventory_date": "43519.0", 
+      "checkout_date": "2019-02-22", 
+      "inventory_date": "2019-02-23", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2084,8 +2365,8 @@
     }, 
     {
       "slide_id": "44", 
-      "checkout_date": "43519.0", 
-      "inventory_date": "43520.0", 
+      "checkout_date": "2019-02-23", 
+      "inventory_date": "2019-02-24", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2100,8 +2381,8 @@
     }, 
     {
       "slide_id": "45", 
-      "checkout_date": "43520.0", 
-      "inventory_date": "43521.0", 
+      "checkout_date": "2019-02-24", 
+      "inventory_date": "2019-02-25", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2116,8 +2397,8 @@
     }, 
     {
       "slide_id": "46", 
-      "checkout_date": "43521.0", 
-      "inventory_date": "43522.0", 
+      "checkout_date": "2019-02-25", 
+      "inventory_date": "2019-02-26", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2132,8 +2413,8 @@
     }, 
     {
       "slide_id": "47", 
-      "checkout_date": "43522.0", 
-      "inventory_date": "43523.0", 
+      "checkout_date": "2019-02-26", 
+      "inventory_date": "2019-02-27", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2148,8 +2429,8 @@
     }, 
     {
       "slide_id": "48", 
-      "checkout_date": "43523.0", 
-      "inventory_date": "43524.0", 
+      "checkout_date": "2019-02-27", 
+      "inventory_date": "2019-02-28", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2164,8 +2445,8 @@
     }, 
     {
       "slide_id": "49", 
-      "checkout_date": "43524.0", 
-      "inventory_date": "43525.0", 
+      "checkout_date": "2019-02-28", 
+      "inventory_date": "2019-03-01", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2180,8 +2461,8 @@
     }, 
     {
       "slide_id": "50", 
-      "checkout_date": "43525.0", 
-      "inventory_date": "43526.0", 
+      "checkout_date": "2019-03-01", 
+      "inventory_date": "2019-03-02", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2196,8 +2477,8 @@
     }, 
     {
       "slide_id": "51", 
-      "checkout_date": "43526.0", 
-      "inventory_date": "43527.0", 
+      "checkout_date": "2019-03-02", 
+      "inventory_date": "2019-03-03", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2212,8 +2493,8 @@
     }, 
     {
       "slide_id": "52", 
-      "checkout_date": "43527.0", 
-      "inventory_date": "43528.0", 
+      "checkout_date": "2019-03-03", 
+      "inventory_date": "2019-03-04", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2228,8 +2509,8 @@
     }, 
     {
       "slide_id": "53", 
-      "checkout_date": "43528.0", 
-      "inventory_date": "43529.0", 
+      "checkout_date": "2019-03-04", 
+      "inventory_date": "2019-03-05", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2244,8 +2525,8 @@
     }, 
     {
       "slide_id": "54", 
-      "checkout_date": "43529.0", 
-      "inventory_date": "43530.0", 
+      "checkout_date": "2019-03-05", 
+      "inventory_date": "2019-03-06", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2260,8 +2541,8 @@
     }, 
     {
       "slide_id": "55", 
-      "checkout_date": "43530.0", 
-      "inventory_date": "43531.0", 
+      "checkout_date": "2019-03-06", 
+      "inventory_date": "2019-03-07", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2276,8 +2557,8 @@
     }, 
     {
       "slide_id": "56", 
-      "checkout_date": "43531.0", 
-      "inventory_date": "43532.0", 
+      "checkout_date": "2019-03-07", 
+      "inventory_date": "2019-03-08", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2292,8 +2573,8 @@
     }, 
     {
       "slide_id": "57", 
-      "checkout_date": "43532.0", 
-      "inventory_date": "43533.0", 
+      "checkout_date": "2019-03-08", 
+      "inventory_date": "2019-03-09", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2308,8 +2589,8 @@
     }, 
     {
       "slide_id": "58", 
-      "checkout_date": "43533.0", 
-      "inventory_date": "43534.0", 
+      "checkout_date": "2019-03-09", 
+      "inventory_date": "2019-03-10", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2324,8 +2605,8 @@
     }, 
     {
       "slide_id": "59", 
-      "checkout_date": "43534.0", 
-      "inventory_date": "43535.0", 
+      "checkout_date": "2019-03-10", 
+      "inventory_date": "2019-03-11", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2340,8 +2621,8 @@
     }, 
     {
       "slide_id": "60", 
-      "checkout_date": "43535.0", 
-      "inventory_date": "43536.0", 
+      "checkout_date": "2019-03-11", 
+      "inventory_date": "2019-03-12", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2356,8 +2637,8 @@
     }, 
     {
       "slide_id": "61", 
-      "checkout_date": "43536.0", 
-      "inventory_date": "43537.0", 
+      "checkout_date": "2019-03-12", 
+      "inventory_date": "2019-03-13", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2372,8 +2653,8 @@
     }, 
     {
       "slide_id": "62", 
-      "checkout_date": "43537.0", 
-      "inventory_date": "43538.0", 
+      "checkout_date": "2019-03-13", 
+      "inventory_date": "2019-03-14", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2388,8 +2669,8 @@
     }, 
     {
       "slide_id": "63", 
-      "checkout_date": "43538.0", 
-      "inventory_date": "43539.0", 
+      "checkout_date": "2019-03-14", 
+      "inventory_date": "2019-03-15", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2404,8 +2685,8 @@
     }, 
     {
       "slide_id": "64", 
-      "checkout_date": "43539.0", 
-      "inventory_date": "43540.0", 
+      "checkout_date": "2019-03-15", 
+      "inventory_date": "2019-03-16", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2420,8 +2701,8 @@
     }, 
     {
       "slide_id": "65", 
-      "checkout_date": "43540.0", 
-      "inventory_date": "43541.0", 
+      "checkout_date": "2019-03-16", 
+      "inventory_date": "2019-03-17", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2436,8 +2717,8 @@
     }, 
     {
       "slide_id": "66", 
-      "checkout_date": "43541.0", 
-      "inventory_date": "43542.0", 
+      "checkout_date": "2019-03-17", 
+      "inventory_date": "2019-03-18", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2452,8 +2733,8 @@
     }, 
     {
       "slide_id": "67", 
-      "checkout_date": "43542.0", 
-      "inventory_date": "43543.0", 
+      "checkout_date": "2019-03-18", 
+      "inventory_date": "2019-03-19", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2468,8 +2749,8 @@
     }, 
     {
       "slide_id": "68", 
-      "checkout_date": "43543.0", 
-      "inventory_date": "43544.0", 
+      "checkout_date": "2019-03-19", 
+      "inventory_date": "2019-03-20", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2484,8 +2765,8 @@
     }, 
     {
       "slide_id": "69", 
-      "checkout_date": "43544.0", 
-      "inventory_date": "43545.0", 
+      "checkout_date": "2019-03-20", 
+      "inventory_date": "2019-03-21", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2500,8 +2781,8 @@
     }, 
     {
       "slide_id": "70", 
-      "checkout_date": "43545.0", 
-      "inventory_date": "43546.0", 
+      "checkout_date": "2019-03-21", 
+      "inventory_date": "2019-03-22", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2516,8 +2797,8 @@
     }, 
     {
       "slide_id": "71", 
-      "checkout_date": "43546.0", 
-      "inventory_date": "43547.0", 
+      "checkout_date": "2019-03-22", 
+      "inventory_date": "2019-03-23", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2532,8 +2813,8 @@
     }, 
     {
       "slide_id": "72", 
-      "checkout_date": "43547.0", 
-      "inventory_date": "43548.0", 
+      "checkout_date": "2019-03-23", 
+      "inventory_date": "2019-03-24", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2548,8 +2829,8 @@
     }, 
     {
       "slide_id": "73", 
-      "checkout_date": "43548.0", 
-      "inventory_date": "43549.0", 
+      "checkout_date": "2019-03-24", 
+      "inventory_date": "2019-03-25", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2564,8 +2845,8 @@
     }, 
     {
       "slide_id": "74", 
-      "checkout_date": "43549.0", 
-      "inventory_date": "43550.0", 
+      "checkout_date": "2019-03-25", 
+      "inventory_date": "2019-03-26", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2580,8 +2861,8 @@
     }, 
     {
       "slide_id": "75", 
-      "checkout_date": "43550.0", 
-      "inventory_date": "43551.0", 
+      "checkout_date": "2019-03-26", 
+      "inventory_date": "2019-03-27", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2596,8 +2877,8 @@
     }, 
     {
       "slide_id": "76", 
-      "checkout_date": "43551.0", 
-      "inventory_date": "43552.0", 
+      "checkout_date": "2019-03-27", 
+      "inventory_date": "2019-03-28", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2612,8 +2893,8 @@
     }, 
     {
       "slide_id": "77", 
-      "checkout_date": "43552.0", 
-      "inventory_date": "43553.0", 
+      "checkout_date": "2019-03-28", 
+      "inventory_date": "2019-03-29", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2628,8 +2909,8 @@
     }, 
     {
       "slide_id": "78", 
-      "checkout_date": "43553.0", 
-      "inventory_date": "43554.0", 
+      "checkout_date": "2019-03-29", 
+      "inventory_date": "2019-03-30", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2644,8 +2925,8 @@
     }, 
     {
       "slide_id": "79", 
-      "checkout_date": "43554.0", 
-      "inventory_date": "43555.0", 
+      "checkout_date": "2019-03-30", 
+      "inventory_date": "2019-03-31", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2660,8 +2941,8 @@
     }, 
     {
       "slide_id": "80", 
-      "checkout_date": "43555.0", 
-      "inventory_date": "43556.0", 
+      "checkout_date": "2019-03-31", 
+      "inventory_date": "2019-04-01", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2676,8 +2957,8 @@
     }, 
     {
       "slide_id": "81", 
-      "checkout_date": "43556.0", 
-      "inventory_date": "43557.0", 
+      "checkout_date": "2019-04-01", 
+      "inventory_date": "2019-04-02", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2692,8 +2973,8 @@
     }, 
     {
       "slide_id": "82", 
-      "checkout_date": "43557.0", 
-      "inventory_date": "43558.0", 
+      "checkout_date": "2019-04-02", 
+      "inventory_date": "2019-04-03", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2708,8 +2989,8 @@
     }, 
     {
       "slide_id": "83", 
-      "checkout_date": "43558.0", 
-      "inventory_date": "43559.0", 
+      "checkout_date": "2019-04-03", 
+      "inventory_date": "2019-04-04", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2724,8 +3005,8 @@
     }, 
     {
       "slide_id": "84", 
-      "checkout_date": "43559.0", 
-      "inventory_date": "43560.0", 
+      "checkout_date": "2019-04-04", 
+      "inventory_date": "2019-04-05", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2740,8 +3021,8 @@
     }, 
     {
       "slide_id": "85", 
-      "checkout_date": "43560.0", 
-      "inventory_date": "43561.0", 
+      "checkout_date": "2019-04-05", 
+      "inventory_date": "2019-04-06", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2756,8 +3037,8 @@
     }, 
     {
       "slide_id": "86", 
-      "checkout_date": "43561.0", 
-      "inventory_date": "43562.0", 
+      "checkout_date": "2019-04-06", 
+      "inventory_date": "2019-04-07", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2772,8 +3053,8 @@
     }, 
     {
       "slide_id": "87", 
-      "checkout_date": "43562.0", 
-      "inventory_date": "43563.0", 
+      "checkout_date": "2019-04-07", 
+      "inventory_date": "2019-04-08", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2788,8 +3069,8 @@
     }, 
     {
       "slide_id": "88", 
-      "checkout_date": "43563.0", 
-      "inventory_date": "43564.0", 
+      "checkout_date": "2019-04-08", 
+      "inventory_date": "2019-04-09", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2804,8 +3085,8 @@
     }, 
     {
       "slide_id": "89", 
-      "checkout_date": "43564.0", 
-      "inventory_date": "43565.0", 
+      "checkout_date": "2019-04-09", 
+      "inventory_date": "2019-04-10", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2820,8 +3101,8 @@
     }, 
     {
       "slide_id": "90", 
-      "checkout_date": "43565.0", 
-      "inventory_date": "43566.0", 
+      "checkout_date": "2019-04-10", 
+      "inventory_date": "2019-04-11", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2836,8 +3117,8 @@
     }, 
     {
       "slide_id": "91", 
-      "checkout_date": "43566.0", 
-      "inventory_date": "43567.0", 
+      "checkout_date": "2019-04-11", 
+      "inventory_date": "2019-04-12", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2852,8 +3133,8 @@
     }, 
     {
       "slide_id": "92", 
-      "checkout_date": "43567.0", 
-      "inventory_date": "43568.0", 
+      "checkout_date": "2019-04-12", 
+      "inventory_date": "2019-04-13", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2868,8 +3149,8 @@
     }, 
     {
       "slide_id": "93", 
-      "checkout_date": "43568.0", 
-      "inventory_date": "43569.0", 
+      "checkout_date": "2019-04-13", 
+      "inventory_date": "2019-04-14", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2884,8 +3165,8 @@
     }, 
     {
       "slide_id": "94", 
-      "checkout_date": "43569.0", 
-      "inventory_date": "43570.0", 
+      "checkout_date": "2019-04-14", 
+      "inventory_date": "2019-04-15", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2900,8 +3181,8 @@
     }, 
     {
       "slide_id": "95", 
-      "checkout_date": "43570.0", 
-      "inventory_date": "43571.0", 
+      "checkout_date": "2019-04-15", 
+      "inventory_date": "2019-04-16", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2916,8 +3197,8 @@
     }, 
     {
       "slide_id": "96", 
-      "checkout_date": "43571.0", 
-      "inventory_date": "43572.0", 
+      "checkout_date": "2019-04-16", 
+      "inventory_date": "2019-04-17", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2932,8 +3213,8 @@
     }, 
     {
       "slide_id": "97", 
-      "checkout_date": "43572.0", 
-      "inventory_date": "43573.0", 
+      "checkout_date": "2019-04-17", 
+      "inventory_date": "2019-04-18", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2948,8 +3229,8 @@
     }, 
     {
       "slide_id": "98", 
-      "checkout_date": "43573.0", 
-      "inventory_date": "43574.0", 
+      "checkout_date": "2019-04-18", 
+      "inventory_date": "2019-04-19", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2964,8 +3245,8 @@
     }, 
     {
       "slide_id": "99", 
-      "checkout_date": "43574.0", 
-      "inventory_date": "43575.0", 
+      "checkout_date": "2019-04-19", 
+      "inventory_date": "2019-04-20", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -2980,8 +3261,8 @@
     }, 
     {
       "slide_id": "100", 
-      "checkout_date": "43575.0", 
-      "inventory_date": "43576.0", 
+      "checkout_date": "2019-04-20", 
+      "inventory_date": "2019-04-21", 
       "project_number": null, 
       "study_name": null, 
       "collaborator_name": null, 
@@ -3121,58 +3402,536 @@
       "id": 1, 
       "number": 1, 
       "project_id": 1, 
-      "date_initiated": "1/10/2019"
+      "date_initiated": "1/10/2019", 
+      "microscope_id": null
     }, 
     {
       "id": 2, 
       "number": 2, 
       "project_id": 1, 
-      "date_initiated": "2/10/2019"
+      "date_initiated": "2/10/2019", 
+      "microscope_id": null
     }, 
     {
       "id": 3, 
       "number": 3, 
       "project_id": 1, 
-      "date_initiated": "3/10/2019"
+      "date_initiated": "3/10/2019", 
+      "microscope_id": null
     }, 
     {
       "id": 4, 
       "number": 1, 
       "project_id": 2, 
-      "date_initiated": "1/10/2019"
+      "date_initiated": "1/10/2019", 
+      "microscope_id": null
     }, 
     {
       "id": 5, 
       "number": 2, 
       "project_id": 2, 
-      "date_initiated": "2/10/2019"
+      "date_initiated": "2/10/2019", 
+      "microscope_id": null
     }, 
     {
       "id": 6, 
       "number": 3, 
       "project_id": 2, 
-      "date_initiated": "3/10/2019"
+      "date_initiated": "3/10/2019", 
+      "microscope_id": null
     }, 
     {
       "id": 7, 
       "number": 1, 
       "project_id": 3, 
-      "date_initiated": "1/10/2019"
+      "date_initiated": "1/10/2019", 
+      "microscope_id": null
     }, 
     {
       "id": 8, 
       "number": 2, 
       "project_id": 3, 
-      "date_initiated": "2/10/2019"
+      "date_initiated": "2/10/2019", 
+      "microscope_id": null
     }, 
     {
       "id": 9, 
       "number": 3, 
       "project_id": 3, 
-      "date_initiated": "3/10/2019"
+      "date_initiated": "3/10/2019", 
+      "microscope_id": null
     }
   ], 
-  "cycle": [], 
-  "microscope": [], 
-  "channel": []
+  "microscope": [
+    {
+      "id": 1, 
+      "name": "Rarecyte CF6", 
+      "magnification": 20, 
+      "channels": 4
+    }, 
+    {
+      "id": 2, 
+      "name": "Rarecyte HT3", 
+      "magnification": 20, 
+      "channels": 4
+    }, 
+    {
+      "id": 3, 
+      "name": "InCell6000", 
+      "magnification": 30, 
+      "channels": 5
+    }, 
+    {
+      "id": 4, 
+      "name": "InCell7000", 
+      "magnification": 40, 
+      "channels": 6
+    }
+  ], 
+  "channel": [
+    {
+      "id": 1, 
+      "ordinal": 1, 
+      "filter": "dapi", 
+      "reagent_id": null, 
+      "experiment_id": "1"
+    }, 
+    {
+      "id": 2, 
+      "ordinal": 2, 
+      "filter": "fitc", 
+      "reagent_id": null, 
+      "experiment_id": "1"
+    }, 
+    {
+      "id": 3, 
+      "ordinal": 3, 
+      "filter": "cy3", 
+      "reagent_id": null, 
+      "experiment_id": "1"
+    }, 
+    {
+      "id": 4, 
+      "ordinal": 4, 
+      "filter": "cy5", 
+      "reagent_id": null, 
+      "experiment_id": "1"
+    }, 
+    {
+      "id": 5, 
+      "ordinal": 1, 
+      "filter": "dapi", 
+      "reagent_id": null, 
+      "experiment_id": "4"
+    }, 
+    {
+      "id": 6, 
+      "ordinal": 2, 
+      "filter": "fitc", 
+      "reagent_id": null, 
+      "experiment_id": "4"
+    }, 
+    {
+      "id": 7, 
+      "ordinal": 3, 
+      "filter": "cy3", 
+      "reagent_id": null, 
+      "experiment_id": "4"
+    }, 
+    {
+      "id": 8, 
+      "ordinal": 4, 
+      "filter": "cy5", 
+      "reagent_id": null, 
+      "experiment_id": "4"
+    }
+  ], 
+  "cycle_image": [
+    {
+      "id": "1", 
+      "ordinal": 1, 
+      "experiment_id": "1", 
+      "date_started": "04/01/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "2", 
+      "ordinal": 2, 
+      "experiment_id": "1", 
+      "date_started": "04/01/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "3", 
+      "ordinal": 3, 
+      "experiment_id": "1", 
+      "date_started": "04/01/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "4", 
+      "ordinal": 4, 
+      "experiment_id": "1", 
+      "date_started": "04/01/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "5", 
+      "ordinal": 5, 
+      "experiment_id": "1", 
+      "date_started": "04/01/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "6", 
+      "ordinal": 6, 
+      "experiment_id": "1", 
+      "date_started": "04/01/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "7", 
+      "ordinal": 7, 
+      "experiment_id": "1", 
+      "date_started": "04/01/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "8", 
+      "ordinal": 8, 
+      "experiment_id": "1", 
+      "date_started": "04/01/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "9", 
+      "ordinal": 1, 
+      "experiment_id": "4", 
+      "date_started": "04/10/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "10", 
+      "ordinal": 2, 
+      "experiment_id": "4", 
+      "date_started": "04/10/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "11", 
+      "ordinal": 3, 
+      "experiment_id": "4", 
+      "date_started": "04/10/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "12", 
+      "ordinal": 4, 
+      "experiment_id": "4", 
+      "date_started": "04/10/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "13", 
+      "ordinal": 5, 
+      "experiment_id": "4", 
+      "date_started": "04/10/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "14", 
+      "ordinal": 6, 
+      "experiment_id": "4", 
+      "date_started": "04/10/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "15", 
+      "ordinal": 7, 
+      "experiment_id": "4", 
+      "date_started": "04/10/2019", 
+      "purpose": null, 
+      "protocol": null
+    }, 
+    {
+      "id": "16", 
+      "ordinal": 8, 
+      "experiment_id": "4", 
+      "date_started": "04/10/2019", 
+      "purpose": null, 
+      "protocol": null
+    }
+  ], 
+  "cycle_image_channel": [
+    {
+      "id": 1, 
+      "cycle_image_id": 1, 
+      "channel_id": 1, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 2, 
+      "cycle_image_id": 1, 
+      "channel_id": 2, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 3, 
+      "cycle_image_id": 1, 
+      "channel_id": 3, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 4, 
+      "cycle_image_id": 1, 
+      "channel_id": 4, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 5, 
+      "cycle_image_id": 2, 
+      "channel_id": 1, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 6, 
+      "cycle_image_id": 2, 
+      "channel_id": 2, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 7, 
+      "cycle_image_id": 2, 
+      "channel_id": 3, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 8, 
+      "cycle_image_id": 2, 
+      "channel_id": 4, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 9, 
+      "cycle_image_id": 3, 
+      "channel_id": 1, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 10, 
+      "cycle_image_id": 3, 
+      "channel_id": 2, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 11, 
+      "cycle_image_id": 3, 
+      "channel_id": 3, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 12, 
+      "cycle_image_id": 3, 
+      "channel_id": 4, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 13, 
+      "cycle_image_id": 4, 
+      "channel_id": 1, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 14, 
+      "cycle_image_id": 4, 
+      "channel_id": 2, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 15, 
+      "cycle_image_id": 4, 
+      "channel_id": 3, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 16, 
+      "cycle_image_id": 4, 
+      "channel_id": 4, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 17, 
+      "cycle_image_id": 5, 
+      "channel_id": 1, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 18, 
+      "cycle_image_id": 5, 
+      "channel_id": 2, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 19, 
+      "cycle_image_id": 5, 
+      "channel_id": 3, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 20, 
+      "cycle_image_id": 5, 
+      "channel_id": 4, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 21, 
+      "cycle_image_id": 6, 
+      "channel_id": 1, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 22, 
+      "cycle_image_id": 6, 
+      "channel_id": 2, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 23, 
+      "cycle_image_id": 6, 
+      "channel_id": 3, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 24, 
+      "cycle_image_id": 6, 
+      "channel_id": 4, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 25, 
+      "cycle_image_id": 7, 
+      "channel_id": 1, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 26, 
+      "cycle_image_id": 7, 
+      "channel_id": 2, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 27, 
+      "cycle_image_id": 7, 
+      "channel_id": 3, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 28, 
+      "cycle_image_id": 7, 
+      "channel_id": 4, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 29, 
+      "cycle_image_id": 8, 
+      "channel_id": 1, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 30, 
+      "cycle_image_id": 8, 
+      "channel_id": 2, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 31, 
+      "cycle_image_id": 8, 
+      "channel_id": 3, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }, 
+    {
+      "id": 32, 
+      "cycle_image_id": 8, 
+      "channel_id": 4, 
+      "dilution": null, 
+      "exposure_time": null, 
+      "comment": null
+    }
+  ]
 }

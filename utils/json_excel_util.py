@@ -256,6 +256,13 @@ def from_xlsx(input_file, output_filename):
         val = int(val)
     return val
 
+  def parse_float(v):
+    val = v
+    if val is None:
+      return val
+    val = float(val)
+    return val
+
   def parse_boolean(v):
     val = v
     if val is None:
@@ -359,6 +366,7 @@ def from_xlsx(input_file, output_filename):
   parsers_by_data_type = {
     'string': parse_string,
     'integer': parse_int,
+    'float': parse_float,
     'boolean': parse_boolean,
     'arraystring': parse_arraystring,
     'arrayint': parse_arrayint,
