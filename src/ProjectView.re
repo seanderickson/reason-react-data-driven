@@ -30,9 +30,6 @@ let make =
 
   let (addState, setAddState) = React.useState(() => View);
 
-  // let experimentResource =
-  //   Belt.Option.getExn(getFilledResource("experiment"));
-
   let addExperiment = currentExperiments => {
     // Create the default values for the form
     let defaults: Js.Dict.t(Js.Json.t) = Js.Dict.empty();
@@ -183,7 +180,8 @@ let make =
           fetchProject(projectId);
         }}
         saveAction={entity => {
-          // fetchEntities(`project);
+          // Call fetEntities on the store here: effectively a reset
+          fetchEntities(`project);
           Js.log2("new entity recorded: ", entity);
         }}
         viewFunctionMap>
