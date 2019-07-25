@@ -142,12 +142,6 @@ let make =
     |> Belt.Option.flatMap(_, v => v == Js.Json.null ? None : Some(v));
 
   let isFieldModified = (field: Field.t) => {
-    Js.log4(
-      "isFieldModified",
-      getCurrentFieldValue(field),
-      getInitialFieldValue(field),
-      getCurrentFieldValue(field) != getInitialFieldValue(field),
-    );
     getCurrentFieldValue(field) != getInitialFieldValue(field);
   };
 
@@ -261,13 +255,13 @@ let make =
            Belt.Option.mapWithDefault(field.validators, false, validators =>
              Belt.Array.some(validators, v => v == `required)
            );
-         // TODO: implement multiselect
          if (field.vocabularies != None) {
            switch (field.display_type) {
            | Autosuggest =>
              let suggestionsAvailable =
                Belt.Option.getExn(field.vocabularies)
                |> Belt.Array.map(_, vocab => vocab.key);
+             Js.log2("suggestionsAvailable", suggestionsAvailable);
              let fetchSuggestions = (value: string): array(string) => {
                // TODO: Can query external server here
                let inputValue =
@@ -305,6 +299,7 @@ let make =
                //  )}
              />;
            | _ =>
+             // TODO: implement multiselect
              let options =
                Belt.Option.getExn(field.vocabularies)
                |> Belt.Array.map(_, vocab =>
@@ -366,8 +361,8 @@ let make =
                  dateFormat="yyyy-MM-dd"
                  selected=dateValue
                  isClearable={!isRequired}
-                 onChange={obj =>
-                   obj
+                 onChange={rawVal =>
+                   rawVal
                    |> Js.Nullable.toOption
                    |> Belt.Option.map(_, v => formatDate(v))
                    |> updateField(field)

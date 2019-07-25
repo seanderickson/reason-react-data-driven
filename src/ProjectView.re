@@ -139,15 +139,17 @@ let make =
       Resource.getField(resource, fieldName)
       |> Belt.Option.mapWithDefault(
            _, "field name not found: " ++ fieldName, field =>
-           Metadata.fieldDecoder(~json=entity, ~field)
-           |> (
-             pi_id =>
-               getEntity(`person, pi_id)
-               |> Belt.Option.mapWithDefault(_, "no data for: " ++ pi_id, json =>
-                    Person.decode(json)
-                    |> (person => person.first_name ++ " " ++ person.last_name)
-                  )
-           )
+           Metadata.Field.getDisplayValue(entity, field)
+           |> Belt.Option.mapWithDefault(_, "-", pi_id =>
+                getEntity(`person, pi_id)
+                |> Belt.Option.mapWithDefault(
+                     _, "no data for: " ++ pi_id, json =>
+                     Person.decode(json)
+                     |> (
+                       person => person.first_name ++ " " ++ person.last_name
+                     )
+                   )
+              )
          )
     );
 
@@ -156,16 +158,15 @@ let make =
       Resource.getField(resource, fieldName)
       |> Belt.Option.mapWithDefault(
            _, "field name not found: " ++ fieldName, field =>
-           Metadata.fieldDecoder(~json=entity, ~field)
-           |> (
-             irb_id =>
-               getEntity(`irb, irb_id)
-               |> Belt.Option.mapWithDefault(
-                    _, "no data for: " ++ irb_id, json =>
-                    Irb.decode(json)
-                    |> (irb => irb.irb_id ++ " - " ++ irb.type_)
-                  )
-           )
+           Metadata.Field.getDisplayValue(entity, field)
+           |> Belt.Option.mapWithDefault(_, "-", irb_id =>
+                getEntity(`irb, irb_id)
+                |> Belt.Option.mapWithDefault(
+                     _, "no data for: " ++ irb_id, json =>
+                     Irb.decode(json)
+                     |> (irb => irb.irb_id ++ " - " ++ irb.type_)
+                   )
+              )
          )
     );
 
