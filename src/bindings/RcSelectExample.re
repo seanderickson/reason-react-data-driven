@@ -1,6 +1,6 @@
 open Common;
 
-[%bs.raw {|require('../../node_modules/rc-select/assets/index.css')|}];
+// [%bs.raw {|require('../../node_modules/rc-select/assets/index.css')|}];
 
 /// NOTE: NOT yet working:
 // - onSelect, onChange are not being fired

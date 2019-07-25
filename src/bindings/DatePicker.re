@@ -1,4 +1,4 @@
-// Bindings for https://github.com/Hacker0x01/react-datepicker/
+// Binding for https://github.com/Hacker0x01/react-datepicker/
 
 [@bs.module "react-datepicker/dist/react-datepicker.js"] [@react.component]
 external make:

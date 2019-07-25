@@ -35,4 +35,10 @@ let make = () =>
     <hr/>
     {str("File input example: ")}
     <FileInputExample />    
+    <hr/>
+    {str("adazzle react-grid: ")}
+    <a target="_blank" href="https://github.com/adazzle/react-data-grid">
+      {str("github.com/adazzle/react-data-grid")}
+    </a>
+    <ReactDataGridExample />    
   </div>;

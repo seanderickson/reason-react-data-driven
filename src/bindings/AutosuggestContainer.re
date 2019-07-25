@@ -6,6 +6,8 @@ open ApiClient;
 
 [%bs.raw {|require('../css/autosuggest.css')|}];
 
+// TODO: implement suggestion fetch state (loading, failed, ready...)
+
 type suggestionState = {
   value: option(string),
   suggestions: array(string),
