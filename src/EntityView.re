@@ -30,15 +30,33 @@ let make =
   let fetchEntity = (resource: Resource.t, id) => {
     Js.log("fetch entity...");
     setEntityState(_ => Loading);
-    ApiClient.getEntity(resource.name, id)
-    |> Js.Promise.then_(result => {
-         switch (result) {
-         | Result.Ok(entity) => setEntityState(_ => LoadSuccess(entity))
-         | Result.Error(message) => setEntityState(_ => LoadFailure(message))
-         };
-         Js.Promise.resolve();
-       })
-    |> ignore;
+    switch (resource.name) {
+    | "canonical" =>
+      ApiClient.getRtEntity(resource.name, id)
+      |> Js.Promise.then_(result => {
+           switch (result) {
+           | Result.Ok(entity) =>
+             Js.log2("got rt entity: ", entity);
+             setEntityState(_ => LoadSuccess(Belt.Option.getExn(entity[0])));
+           | Result.Error(message) =>
+             setEntityState(_ => LoadFailure(message))
+           };
+           Js.Promise.resolve();
+         })
+      |> ignore
+
+    | _ =>
+      ApiClient.getEntity(resource.name, id)
+      |> Js.Promise.then_(result => {
+           switch (result) {
+           | Result.Ok(entity) => setEntityState(_ => LoadSuccess(entity))
+           | Result.Error(message) =>
+             setEntityState(_ => LoadFailure(message))
+           };
+           Js.Promise.resolve();
+         })
+      |> ignore
+    };
   };
 
   React.useEffect1(
