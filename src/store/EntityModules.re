@@ -1,3 +1,4 @@
+let nullDecoder = json => json;
 
 module type EntityData = {
   type t;
@@ -74,7 +75,7 @@ module Person = {
     id: int,
     first_name: string,
     last_name: string,
-    lab_id: int
+    lab_id: int,
   };
 
   let decode = (json: Js.Json.t): t =>
@@ -93,7 +94,7 @@ module Irb = {
     id: int,
     irb_id: string,
     lab_id: int,
-    type_: string
+    type_: string,
   };
 
   let decode = (json: Js.Json.t): t =>
@@ -101,68 +102,41 @@ module Irb = {
       id: json |> field("id", int),
       irb_id: json |> field("irb_id", string),
       lab_id: json |> field("id", int),
-      type_: json |> field("type", string)
+      type_: json |> field("type", string),
     };
 
   let getId = json => decode(json).id |> string_of_int;
 };
 
-// module type EntityDataInt = {
-//   type t;
-//   let decode: Js.Json.t => t;
-//   let decodeMany: Js.Json.t => array(t);
-// };
+module ReagentData = {
+  module Batch = {
+    type t = {id: int};
 
-// module Make_Entity =
-//        (Input: EntityData)
-//        : (EntityDataInt with type t = Input.t) => {
-//   include Input;
-//   let decodeMany = (json: Js.Json.t): array(t) =>
-//     Json.Decode.(json |> array(decode));
-// };
+    let decode = json => Json.Decode.{id: json |> field("id", int)};
+  };
+  module Canonical = {
+    type t = {
+      href: string,
+      restricted: bool,
+      batches: option(array(Batch.t)),
+    };
 
-// module Experiment2 = Make_Entity(Experiment);
-// module Project2 = Make_Entity(Project) /*     experiments*/ /*       )*/;
+    let decode = json =>
+      Json.Decode.{
+        href: json |> field("href", string),
+        restricted: json |> field("restricted", bool),
+        batches: json |> optional(field("batches", array(Batch.decode))),
+      };
+  };
 
-/// testing
+  type t = {canonicals: option(array(Canonical.t))};
 
-// module type EntityDataInt = {
-//   type t;
-//   let decode: Js.Json.t => t;
-//   // let filterExperiments: (int, option(array(Js.Json.t)))=>option(array(Js.Json.t));
-// };
+  let decode = json =>
+    Json.Decode.{
+      canonicals:
+        json |> optional(field("canonicals", array(Canonical.decode))),
+    };
 
-// // A functor to extend the EntityData interface
-// module Make_EntityData(D: EntityData): EntityDataInt with type t=D.t = {
-//   include D;
-// };
-
-// module type ExpInput = {
-//   type t = {
-//     id: int,
-//     project_id: int,
-//     number: int,
-//   };
-
-// };
-
-// module Experiment2 = Make_EntityData({
-
-//   let decode = (json: Js.Json.t): t =>
-//     Json.Decode.{
-//       id: json |> field("id", int),
-//       project_id: json |> field("project_id", int),
-//       number: json |> field("number", int),
-//     };
-
-//   let filterExperiments = (projectId, entities) => {
-//     let experiments =
-//       Belt.Option.map(entities, exps =>
-//         Belt.Array.keep(
-//           exps,
-//           exp => {
-//             // let projectEntity = Project.decode(projectEntity);
-//             let expEntity = decode(exp);
-//             projectId == expEntity.project_id;
-//           },
-//         )
+  let jsonArrayDecoder =
+    Json.Decode.field("canonicals", Json.Decode.array(nullDecoder));
+};

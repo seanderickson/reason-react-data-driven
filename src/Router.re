@@ -38,6 +38,8 @@ let make = () => {
     );
 
   // Store (resources) state
+  let {userContextState, logIn, logOut, getUser}: LoginContext.ResourceContext.t =
+    LoginContext.ResourceContext.useResources();
 
   let {resourceState, fetchResources, getResource}: Store.ResourceContext.t =
     Store.ResourceContext.useResources();
@@ -60,7 +62,14 @@ let make = () => {
       description: "For testing",
       fields: [||],
     };
-    <ul className="m-3" key="resources">
+    // let exampleForLogin: Metadata.Resource.t = {
+    //   id: 999,
+    //   name: "login",
+    //   title: "RT-Login",
+    //   description: "For testing: placeholder for menu",
+    //   fields: [||],
+    // };
+    <ul className="m-2" key="resources">
       {resources
        |> Array.concat(_, [|example|])
        |> Array.map(_, resource =>
@@ -77,40 +86,73 @@ let make = () => {
   };
 
   let printContent = () => {
-    <div key="content" className="content m-3">
+    <div key="content" className="content">
       {switch (route.path) {
        | [] => ReasonReact.null
        | [resourceName] =>
          switch (resourceName) {
          | "examples" => <ExamplesView />
          | _ =>
-           let foundResource = getFilledResource(resourceName);
-           switch (foundResource) {
+           switch (getFilledResource(resourceName)) {
            | Some(resource) =>
-             <EntityListingTable key={resource.name} resource />
+             switch (resourceName) {
+             | "canonical"
+             | "search" =>
+               //  Js.log2("route.search: ", route.search);
+               let defaultSearchValue =
+                 decodeURIComponent(route.search)
+                 |> Js.String.split("=")
+                 |> Belt.Array.get(_, 1)
+                 |> Belt.Option.getWithDefault(_, route.search);
+
+               let initialState =
+                 Js.String.length(defaultSearchValue) > 0
+                   ? RtSearchView.Searching(defaultSearchValue)
+                   : RtSearchView.NotAsked;
+               //  <RtSearchView
+               //    resource
+               //   //  initialState=RtSearchView.NotAsked
+               //    initialSearch={Some(defaultSearchValue)}
+               //  />;
+               // <RtSearchView2
+               //   resource
+               //   initialSearch={Some(defaultSearchValue)}
+               // />;
+               <RtSearchView3
+                 resource
+                 initialSearch={
+                   Js.String.length(defaultSearchValue) > 0
+                     ? Some(defaultSearchValue) : None
+                 }
+               />;
+             | _ => <EntityListingTable key={resource.name} resource />
+             }
+
            | None => str("Unknown resource: " ++ resourceName)
-           };
+           }
          }
        | [resourceName, entityId, ...tail] =>
          let foundResource = getFilledResource(resourceName);
          switch (foundResource) {
          | Some(resource) =>
-           if (resourceName == "project") {
+           switch (resource.name) {
+           | "project" =>
              <ProjectView
                resource
                projectId=entityId
                urlStack=tail
                dispatchModal
-             />;
-           } else if (resourceName == "experiment") {
-             <ExperimentView resource entityId urlStack=tail dispatchModal />;
-           } else {
+             />
+           | "experiment" =>
+             <ExperimentView resource entityId urlStack=tail dispatchModal />
+           //  | "search" => <RTReagentView resource defaultSearchValue=entityId />
+           | _ =>
              <EntityView
                key={resource.name ++ "/" ++ entityId}
                resource
                entityId
                urlStack=tail
-             />;
+             />
            }
          | None => str("Unknown resource: " ++ resourceName)
          };
@@ -118,37 +160,63 @@ let make = () => {
     </div>;
   };
 
-  <div>
-    <Modal dispatchModal customClass="foo" show={modalState.shown}>
-      {str(modalState.message)}
-    </Modal>
-    <div className="wrapper">
-      {switch (resourceState) {
-       | NotAsked => str("Not asked...")
-       | LoadFailure(msg) => str("Load failure: " ++ msg)
-       | Loading => str("Loading...")
-       | LoadSuccess(resources) =>
-         switch (entityStoreState.webLoadingState) {
-         | LoadSuccess(_, _) =>
-           Js.log("loadSuccess");
-           switch (resources) {
-           | Some(resources) =>
-             [|printResourceMenu(resources), printContent()|]
-             |> ReasonReact.array
-           | None => str("No resources found")
-           };
+  let renderContent = () => {
+    <div>
+      <Modal dispatchModal customClass="foo" show={modalState.shown}>
+        {str(modalState.message)}
+      </Modal>
+      <div className="wrapper">
+        {switch (resourceState) {
          | NotAsked => str("Not asked...")
-         | LoadFailure(entityType, msg) =>
-           str(
-             "Load failure: "
-             ++ EntityStore.entityTypeToJs(entityType)
-             ++ ": "
-             ++ msg,
-           )
-         | Loading(entityType) =>
-           str("Loading: " ++ EntityStore.entityTypeToJs(entityType))
-         }
-       }}
+         | LoadFailure(msg) => str("Load failure: " ++ msg)
+         | Loading => str("Loading...")
+         | LoadSuccess(resources) =>
+           switch (entityStoreState.webLoadingState) {
+           | LoadSuccess(_, _) =>
+             switch (resources) {
+             | Some(resources) =>
+               [|printResourceMenu(resources), printContent()|]
+               |> ReasonReact.array
+             | None => str("No resources found")
+             }
+           | NotAsked => str("Not asked...")
+           | LoadFailure(entityType, msg) =>
+             str(
+               "Load failure: "
+               ++ EntityStore.entityTypeToJs(entityType)
+               ++ ": "
+               ++ msg,
+             )
+           | Loading(entityType) =>
+             str("Loading: " ++ EntityStore.entityTypeToJs(entityType))
+           }
+         }}
+      </div>
+    </div>;
+  };
+
+  <div>
+    <div
+      className="border-solid border-2 border-gray-300 text-center rounded m-2">
+      {str("Cycif Prototype")}
     </div>
+    {switch (userContextState.loginStatus) {
+     | NotLoggedIn => <Login loginHandler=logIn />
+     | Loading => str("Logging in")
+     | LoginSuccess(user) =>
+       <div>
+         {str("Logged in " ++ user.username)}
+         <br />
+         <a
+           href="#"
+           onClick={evt =>
+             // ReactEvent.Mouse.preventDefault(evt);
+             logOut()}>
+           {str("Log out")}
+         </a>
+         {renderContent()}
+       </div>
+     | LoginFail(msg) => str("Failed login: " ++ msg)
+     }}
   </div>;
 };

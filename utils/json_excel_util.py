@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 #
 # - read db.xlxs file into JSON: see "from_xlsx"
 #
+# NOTE: field schema is hardcoded and must be maintained; see fields_schema
+# 
 ####
 
 
@@ -332,6 +334,12 @@ def from_xlsx(input_file, output_filename):
       'default': None,
       'required': False
     },
+    'href_template': {
+      'data_type': 'string',
+      'parser': parse_string,
+      'default': None,
+      'required': False
+    },
     'validators': {
       'data_type': 'arraystring',
       'parser': parse_arraystring,
@@ -405,8 +413,9 @@ def from_xlsx(input_file, output_filename):
     for field_name, field in field_dict.items():
       keys_null = set([k for k,v in field.items() if v is None])
       if required_fields & keys_null:
-        raise Exception("Resource: {}, meta field: {}, required fields: {}".format(
-          resource_name, field_name, required_fields & keys_null))
+        raise Exception(
+          "Resource: {}, meta field: {}, required fields must be defined: {}"
+          .format(resource_name, field_name, required_fields & keys_null))
 
   # Parse the rest of the value dicts using the Meta Field definitions
   

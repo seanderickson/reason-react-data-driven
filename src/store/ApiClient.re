@@ -5,6 +5,7 @@ let debug_mode = false;
 let test_mock_error_mode = false;
 
 let apiUrl = "http://localhost:3001";
+let rtApiUrl = "/api/v0";
 
 type apiResult('a) = Js.Promise.t(Result.t('a, string));
 
@@ -27,6 +28,36 @@ let fetch = (url, decoder): apiResult('a) => {
            response
            |> Fetch.Response.json
            |> then_(json => resolve(Result.Ok(decoder(json))));
+         };
+       })
+    |> catch(err => {
+         Js.log2("error", err);
+         resolve(Result.Error({j|API error (URL: $url, error=$err)|j}));
+       })
+  );
+};
+
+let fetchRt = (url, decoder): apiResult('a) => {
+  if (debug_mode) {
+    Js.log2("fetching: ", url);
+  };
+  Js.Promise.(
+    Fetch.fetch(url)
+    |> then_(response => {
+         let status = response->Fetch.Response.status;
+         let statusText = response->Fetch.Response.statusText;
+         if (!response->Fetch.Response.ok) {
+           resolve(
+             Result.Error(
+               {j|Response Error: status=$status, "$statusText" |j},
+             ),
+           );
+         } else {
+           response
+           |> Fetch.Response.json
+           |> then_(json =>
+                resolve(Result.Ok(EntityModules.ReagentData.decode(json)))
+              );
          };
        })
     |> catch(err => {
@@ -149,10 +180,29 @@ let buildResources = () =>
      );
 
 let getEntityListing = resourceName =>
-  fetch(apiUrl ++ "/" ++ resourceName, jsonArrayDecoder);
+  if (Belt.Array.some([|"canonical"|], r1 => r1 == resourceName)) {
+    fetch(
+      rtApiUrl ++ "/" ++ resourceName,
+      EntityModules.ReagentData.jsonArrayDecoder,
+    );
+  } else {
+    fetch(apiUrl ++ "/" ++ resourceName, jsonArrayDecoder);
+  };
+
+let searchRtCanonical = term =>
+  fetch(
+    rtApiUrl ++ "/search?q=" ++ term,
+    EntityModules.ReagentData.jsonArrayDecoder,
+  );
 
 let getEntity = (resourceName, id) =>
   fetch(apiUrl ++ "/" ++ resourceName ++ "/" ++ id, nullDecoder);
+
+let getRtEntity = (resourceName, id) =>
+  fetch(
+    rtApiUrl ++ "/" ++ resourceName ++ "/" ++ id,
+    Json.Decode.field("canonicals", jsonArrayDecoder),
+  );
 
 let postEntity = (resourceName, payload) =>
   postPatch(apiUrl ++ "/" ++ resourceName, Fetch.Post, nullDecoder, payload);

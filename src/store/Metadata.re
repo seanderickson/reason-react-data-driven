@@ -59,6 +59,7 @@ module Field = {
     display_type: displayType,
     // If field refers to another entity; endpoint for that entity
     ref_endpoint: option(string),
+    href_template: option(string),
     validators: option(array(validator)),
     editable: bool,
     vocab_scope: option(string),
@@ -123,6 +124,7 @@ module Field = {
           )
         ),
       ref_endpoint: json |> optional(field("ref_endpoint", string)),
+      href_template: json |> optional(field("href_template", string)),
       validators:
         json
         |> optional(field("validators", array(string)))
@@ -141,13 +143,44 @@ module Field = {
   let decodeMany = json => Json.Decode.(json |> array(decode));
 
   let getVocabTitle = (field: t, rawValue: string) => {
-    // Js.log4("getVocabTitle", field.name, rawValue, field.vocabularies);
     switch (field.vocabularies) {
     | Some(vocabularies) =>
       Belt.Array.getBy(vocabularies, v => v.key == rawValue)
       |> Belt.Option.mapWithDefault(_, rawValue, v => v.title)
     | None => rawValue
     };
+  };
+
+  let getDisplayValue = (entity: Js.Json.t, schemaField: t): option(string) => {
+    if (debug_mode) {
+      Js.log4(
+        "decode data field: ",
+        schemaField.resource_name,
+        schemaField.name,
+        entity,
+      );
+    };
+    Json.Decode.(
+      switch (schemaField.data_type) {
+      | String => entity |> optional(field(schemaField.name, string))
+      | Integer =>
+        entity
+        |> optional(field(schemaField.name, int))
+        |> Belt.Option.map(_, string_of_int)
+      | Float =>
+        entity
+        |> optional(field(schemaField.name, Json.Decode.float))
+        |> Belt.Option.map(_, Js.Float.toString)
+      | ArrayString =>
+        entity
+        |> optional(field(schemaField.name, array(string)))
+        |> Belt.Option.map(_, Js.Array.joinWith(","))
+      | Boolean =>
+        entity
+        |> optional(field(schemaField.name, bool))
+        |> Belt.Option.map(_, string_of_bool)
+      }
+    );
   };
 };
 
@@ -177,103 +210,6 @@ module Resource = {
     resource.fields |> Array.getBy(_, field => field.name == fieldName);
   };
 };
-
-let fieldDecodeOpt = (json: Js.Json.t, schemaField: Field.t): option(string) => {
-  if (debug_mode) {
-    Js.log4(
-      "decode data field: ",
-      schemaField.resource_name,
-      schemaField.name,
-      json,
-    );
-  };
-  Json.Decode.(
-    switch (schemaField.data_type) {
-    | String => json |> optional(field(schemaField.name, string))
-    | Integer =>
-      json
-      |> optional(field(schemaField.name, int))
-      |> Belt.Option.map(_, string_of_int)
-    | Float =>
-      json
-      |> optional(field(schemaField.name, Json.Decode.float))
-      |> Belt.Option.map(_, Js.Float.toString)
-    | ArrayString =>
-      json
-      |> optional(field(schemaField.name, array(string)))
-      |> Belt.Option.map(_, Js.Array.joinWith(","))
-    | Boolean =>
-      json
-      |> optional(field(schemaField.name, bool))
-      |> Belt.Option.map(_, string_of_bool)
-    // | Date =>
-    //   json |> optional(field(schemaField.name, date))
-    //   |> Belt.Option.map(_, formatDate)
-    // | _ => raise(DecodeTypeException({j|unknown type for field: "$schemaField.name" - "$schemaField.data_type" |j}))
-    }
-  );
-};
-
-let fieldDecoderExn = (json: Js.Json.t, schemaField: Field.t): string => {
-  if (debug_mode) {
-    Js.log4(
-      "decode data field: ",
-      schemaField.resource_name,
-      schemaField.name,
-      json,
-    );
-  };
-  Json.Decode.(
-    switch (schemaField.data_type) {
-    | String =>
-      json
-      |> optional(field(schemaField.name, string))
-      |> Belt.Option.getWithDefault(_, "-")
-    | Integer =>
-      json
-      |> optional(field(schemaField.name, int))
-      |> (
-        opt =>
-          switch (opt) {
-          | Some(x) => string_of_int(x)
-          | None => "-"
-          }
-      )
-    | Float =>
-      json
-      |> optional(field(schemaField.name, Json.Decode.float))
-      |> (
-        fun
-        | Some(x) => Js.Float.toString(x)
-        | None => "-"
-      )
-    | ArrayString =>
-      json
-      |> optional(field(schemaField.name, array(string)))
-      |> Belt.Option.mapWithDefault(_, "-", v => v |> Js.Array.joinWith(", "))
-    | Boolean =>
-      json
-      |> optional(field(schemaField.name, bool))
-      |> Belt.Option.getWithDefault(_, true)
-      |> string_of_bool
-    // | _ => {j|unknown type for field: "$schemaField.name" - "$schemaField.data_type" |j}
-    }
-  );
-};
-
-let fieldDecoder = (~json, ~field: Field.t): string =>
-  try (
-    {
-      fieldDecoderExn(json, field);
-    }
-  ) {
-  | Js.Exn.Error(e) =>
-    switch (Js.Exn.message(e)) {
-    | Some(message) => {j|$field.name: Decode Error: $message|j}
-    | None => {j|$field.name: An unknown decode error occurred: $e|j}
-    }
-  | Json.Decode.DecodeError(msg) => msg
-  };
 
 let singleFieldDecode = (json: Js.Json.t, schemaField: Field.t): string => {
   if (debug_mode) {

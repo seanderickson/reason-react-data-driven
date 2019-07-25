@@ -172,6 +172,7 @@ module ResourceContext = {
       };
 
       let getAutosuggestScientistVocabulary = () => {
+        Js.log("getAutosuggestScientistVocabulary...");
         let field: Field.t =
           getResource("project")
           |> Belt.Option.flatMap(_, r =>
@@ -181,7 +182,10 @@ module ResourceContext = {
         let result =
           Belt.Option.map(getEntities(`project), entityMap =>
             Belt.Map.String.valuesToArray(entityMap)
-            |> Belt.Array.map(_, json => Metadata.fieldDecoder(json, field))
+            |> Belt.Array.map(_, json =>
+                 Metadata.Field.getDisplayValue(json, field)
+               )
+            |> Belt.Array.keepMap(_, a => a)
             |> Belt.Set.String.fromArray
             |> Belt.Set.String.toArray
             |> Belt.Array.map(
@@ -197,6 +201,7 @@ module ResourceContext = {
                  },
                )
           );
+        Js.log2("result", result);
         result;
       };
 

@@ -15,6 +15,15 @@ type modalState = {
 module BMS = Belt.Map.String;
 
 let str = ReasonReact.string;
+let getValue = event => ReactEvent.Form.target(event)##value;
+
+[@bs.val] external document: Dom.document = "document";
+[@bs.set] external setTitleDom: (Dom.document, string) => unit = "title";
+[@bs.get] external getTitleDom: Dom.document => string = "title";
+
+[@bs.val] external encodeURIComponent: string => string = "encodeURIComponent" ;
+[@bs.val] external decodeURIComponent: string => string = "decodeURIComponent";
+
 
 let lpad = (input: string, pad: char, targetLen: int): string => {
   (
