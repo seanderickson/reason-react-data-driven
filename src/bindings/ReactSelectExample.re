@@ -42,6 +42,7 @@ let make = () => {
   };
 
   <ReactSelect
+    id="react-select-example"
     options=suggestions
     value={state.value}
     onChange

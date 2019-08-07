@@ -13,6 +13,7 @@ type suggestion = {
 [@bs.module "react-select/dist/react-select.cjs.js"] [@react.component]
 external make:
   (
+    ~id: string,
     ~options: array(suggestion),
     ~value: option(suggestion),
     ~onChange: Js.Nullable.t(suggestion) => unit,

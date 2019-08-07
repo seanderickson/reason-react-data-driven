@@ -47,6 +47,13 @@ let make = () => {
     EntityStore.ResourceContext.useResources();
 
   // DOM methods
+  let printTitle = (resource: Resource.t, entityId: string) => {
+    <div
+      key={"resource-title-" ++ resource.name}
+      className="border-solid border-2 border-gray-300 text-center rounded m-2">
+      {str(resource.title ++ ": " ++ entityId)}
+    </div>;
+  };
 
   let printResourceMenu = (resources: Resource.resources) => {
     let testUrl = (url: ReasonReact.Router.url, test) =>
@@ -103,7 +110,8 @@ let make = () => {
                  decodeURIComponent(route.search)
                  |> Js.String.split("=")
                  |> Belt.Array.get(_, 1)
-                 |> Belt.Option.getWithDefault(_, route.search);
+                 |> Belt.Option.getWithDefault(_, route.search)
+                 |> Js.String.trim;
 
                let initialState =
                  Js.String.length(defaultSearchValue) > 0
@@ -135,25 +143,33 @@ let make = () => {
          let foundResource = getFilledResource(resourceName);
          switch (foundResource) {
          | Some(resource) =>
-           switch (resource.name) {
-           | "project" =>
-             <ProjectView
-               resource
-               projectId=entityId
-               urlStack=tail
-               dispatchModal
-             />
-           | "experiment" =>
-             <ExperimentView resource entityId urlStack=tail dispatchModal />
-           //  | "search" => <RTReagentView resource defaultSearchValue=entityId />
-           | _ =>
-             <EntityView
-               key={resource.name ++ "/" ++ entityId}
-               resource
-               entityId
-               urlStack=tail
-             />
-           }
+           <>
+             {printTitle(resource, entityId)}
+             {switch (resource.name) {
+              | "project" =>
+                <ProjectView
+                  resource
+                  projectId=entityId
+                  urlStack=tail
+                  dispatchModal
+                />
+              | "experiment" =>
+                <ExperimentView
+                  resource
+                  entityId
+                  urlStack=tail
+                  dispatchModal
+                />
+              //  | "search" => <RTReagentView resource defaultSearchValue=entityId />
+              | _ =>
+                <EntityView
+                  key={resource.name ++ "/" ++ entityId}
+                  resource
+                  entityId
+                  urlStack=tail
+                />
+              }}
+           </>
          | None => str("Unknown resource: " ++ resourceName)
          };
        }}
@@ -197,25 +213,34 @@ let make = () => {
 
   <div>
     <div
-      className="border-solid border-2 border-gray-300 text-center rounded m-2">
-      {str("Cycif Prototype")}
+      className="text-center border-solid border-2 border-gray-300 rounded m-2">
+      <div className=" "> {str("Cycif Prototype")} </div>
+      {switch (userContextState.loginStatus) {
+       | LoginSuccess(user) =>
+         <div
+           style={ReactDOMRe.Style.make(
+             ~position="absolute",
+             ~top="10px",
+             ~right="20px",
+             (),
+           )}
+           className="">
+           {str("Logged in as:" ++ nbsp ++ user.username ++ nbsp)}
+           <a
+             href="#"
+             onClick={evt =>
+               // ReactEvent.Mouse.preventDefault(evt);
+               logOut()}>
+             {str("Log out")}
+           </a>
+         </div>
+       | _ => ReasonReact.null
+       }}
     </div>
     {switch (userContextState.loginStatus) {
      | NotLoggedIn => <Login loginHandler=logIn />
      | Loading => str("Logging in")
-     | LoginSuccess(user) =>
-       <div>
-         {str("Logged in " ++ user.username)}
-         <br />
-         <a
-           href="#"
-           onClick={evt =>
-             // ReactEvent.Mouse.preventDefault(evt);
-             logOut()}>
-           {str("Log out")}
-         </a>
-         {renderContent()}
-       </div>
+     | LoginSuccess(_user) => renderContent()
      | LoginFail(msg) => str("Failed login: " ++ msg)
      }}
   </div>;

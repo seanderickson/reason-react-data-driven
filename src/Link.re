@@ -7,6 +7,6 @@ let handleClick = (href, event) =>
 
 [@react.component]
 let make = (~href, ~selected=false, ~children) =>
-  <a href className={selected ? "selected" : ""} onClick={handleClick(href)}>
+  <a href tabIndex=(-1) className={selected ? "selected" : ""} onClick={handleClick(href)}>
     children
   </a>;

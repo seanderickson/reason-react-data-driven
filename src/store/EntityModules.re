@@ -57,14 +57,16 @@ module Microscope = {
   type t = {
     id: int,
     name: string,
-    magnification: int,
+    objectives: array(string),
+    filters: array(string),
   };
 
   let decode = (json: Js.Json.t): t =>
     Json.Decode.{
       id: json |> field("id", int),
       name: json |> field("name", string),
-      magnification: json |> field("magnification", int),
+      objectives: json |> field("objectives", array(string)),
+      filters: json |> field("filters", array(string)),
     };
 
   let getId = json => decode(json).id |> string_of_int;
@@ -106,6 +108,72 @@ module Irb = {
     };
 
   let getId = json => decode(json).id |> string_of_int;
+};
+
+module Cycle = {
+  type t = {
+    id: int,
+    ordinal: int,
+    experiment_id: int,
+  };
+
+  let decode = (json: Js.Json.t): t =>
+    Json.Decode.{
+      id: json |> field("id", int),
+      ordinal: json |> field("id", int),
+      experiment_id: json |> field("experiment_id", int),
+    };
+
+  let getId = json => decode(json).id |> string_of_int;
+};
+
+module CycleChannel = {
+  type t = {
+    id: int,
+    cycle_id: int,
+    channel_id: int,
+  };
+
+  let decode = (json: Js.Json.t): t => {
+    // Js.log2("decode CycleChannel" , json);
+    Json.Decode.{
+      id: json |> field("id", int),
+      cycle_id: json |> field("cycle_id", int),
+      channel_id: json |> field("channel_id", int),
+    };
+  };
+  let getId = json => decode(json).id |> string_of_int;
+
+  let belongsTo = (~entity: Js.Json.t, ~cycle: Js.Json.t) =>
+    decode(entity).cycle_id == Cycle.decode(cycle).id;
+
+  let updateChannels = (updatedChannel, channels) =>
+    Belt.Array.map(channels, channelEntity =>
+      getId(channelEntity) == getId(updatedChannel)
+        ? updatedChannel : channelEntity
+    );
+
+  let updateErrors = (errors, channel, newError) => {
+    Js.log4(
+      "add to errors: ",
+      errors,
+      getId(channel),
+      Belt.Map.String.has(errors, getId(channel)),
+    );
+    let newMap =
+      Belt.Map.String.has(errors, getId(channel))
+        ? Belt.Map.String.mapWithKey(errors, (channelId, error) =>
+            getId(channel) == channelId ? newError : error
+          )
+        : Belt.Map.String.set(errors, getId(channel), newError);
+    Js.log4(
+      "add to errors: ",
+      newMap,
+      getId(channel),
+      Belt.Map.String.has(errors, getId(channel)),
+    );
+    newMap;
+  };
 };
 
 module ReagentData = {

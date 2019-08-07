@@ -1,12 +1,6 @@
-open Belt;
 open Common;
 open Metadata;
-// open Store;
-[%bs.raw
-  {|require('../node_modules/react-datepicker/dist/react-datepicker.css')|}
-];
 
-let debug_mode = false;
 let tailwindInputClasses = "appearance-none border-2 rounded max-w-md w-full py-1 leading-tight";
 let tailwindInputWrapperClasses = "appearance-none p-0 rounded max-w-md w-full leading-tight";
 
@@ -19,6 +13,22 @@ type editState('a) =
   | SaveSuccess('a);
 
 type state = editState(Js.Json.t);
+
+let flattenErrors = (currErrs: Js.Dict.t(Js.Dict.t(Js.Dict.key))) => {
+  let printFieldErrors = fieldErrs =>
+    Belt.Array.map(Js.Dict.entries(fieldErrs), ((key, msg)) =>
+      key == msg ? key : {j|$key: $msg|j}
+    )
+    |> Js.Array.joinWith("\n");
+  Belt.Array.map(
+    Js.Dict.entries(currErrs),
+    ((fieldKey, fieldErrs)) => {
+      let msg = printFieldErrors(fieldErrs);
+      {j|$fieldKey: $msg|j};
+    },
+  );
+  // |> Js.Array.joinWith("\n");
+};
 
 let validateField =
     (field: Field.t, value: string): option(Js.Dict.t(string)) => {
@@ -34,7 +44,7 @@ let validateField =
       | `email =>
         if (Js.String.length(Js.String.trim(value)) == 0) {
           let emailRegex = [%bs.re {|/.*@.*\..+/|}];
-          if (!Js.Re.test_(emailRegex,value)) {
+          if (!Js.Re.test_(emailRegex, value)) {
             Js.Dict.set(
               errors,
               "email",
@@ -47,7 +57,7 @@ let validateField =
           Js.Dict.set(errors, "name", "May not be empty");
         } else {
           let nameRegex = [%bs.re {|/^[\w\s]+$/|}];
-          if (!Js.Re.test_(nameRegex,value)) {
+          if (!Js.Re.test_(nameRegex, value)) {
             Js.Dict.set(
               errors,
               "name",
@@ -95,19 +105,47 @@ let validateEntity =
   };
 };
 
-[@react.component]
-let make =
-    (
-      ~resource: Resource.t,
-      ~id: string,
-      ~entity: Js.Json.t,
-      ~refreshAction,
-      ~isNew=false,
-      ~saveAction=?,
-    ) => {
-  // unit,
+module type State = {
+  let state: state;
+  let setState: (state => state) => unit;
+  let resource: Resource.t;
+  let entity: Js.Json.t;
+};
 
-  let (state, setState) = React.useState(() => Edit(entity));
+module type IF = {
+  include State;
+
+  let initialEntity: Js.Dict.t(Js.Json.t);
+  let getInitialFieldValue: Field.t => option(Js.Json.t);
+  let getUpdatedEntity: unit => Js.Dict.t(Js.Json.t);
+  let getCurrentFieldValue: Field.t => option(Js.Json.t);
+  let isFieldModified: Field.t => bool;
+  let updateField: (Field.t, option(string)) => unit;
+  let updateFieldRaw: (Field.t, Js.Json.t) => unit;
+  let getFieldError: Field.t => option(string);
+  let printEditor: Field.t => ReasonReact.reactElement;
+  let printCurrentDisplayValue: Field.t => ReasonReact.reactElement;
+
+  let save:
+    (
+      Js.Json.t,
+      ~isNew: bool,
+      ~entityId: option(string),
+      ~saveAction: option(Js.Json.t => unit),
+      unit
+    ) =>
+    unit;
+};
+
+module Make = (StateContainer: State) : IF => {
+  let state = StateContainer.state;
+  let setState = StateContainer.setState;
+  let resource = StateContainer.resource;
+  // let id = StateContainer.id;
+  let entity = StateContainer.entity;
+  // let refreshAction = StateContainer.refreshAction;
+  // let isNew = StateContainer.isNew;
+  // let saveAction = StateContainer.saveAction;
 
   // Store the initial entity for detection of user updates:
   // - Note: decodeObject creates a Js.Dict(Js.Json.t)
@@ -130,7 +168,9 @@ let make =
       let currentCopy = Js.Dict.empty();
       initialEntity
       |> Js.Dict.entries
-      |> Array.forEach(_, ((key, v)) => Js.Dict.set(currentCopy, key, v));
+      |> Belt.Array.forEach(_, ((key, v)) =>
+           Js.Dict.set(currentCopy, key, v)
+         );
       currentCopy;
     };
 
@@ -139,10 +179,18 @@ let make =
     |> Belt.Option.flatMap(_, v => v == Js.Json.null ? None : Some(v));
 
   let isFieldModified = (field: Field.t) => {
+    if (debug_mode) {
+      Js.log4(
+        "isFieldModified",
+        field.name,
+        getCurrentFieldValue(field),
+        getInitialFieldValue(field),
+      );
+    };
     getCurrentFieldValue(field) != getInitialFieldValue(field);
   };
 
-  let updateField = (field: Field.t, value: option(string)) => {
+  let updateFieldRaw = (field: Field.t, value: Js.Json.t) => {
     Js.log3("updateField", field.name, value);
     // TODO: use an immutable (Belt.Map)
     let updatedEntity = getUpdatedEntity();
@@ -152,15 +200,10 @@ let make =
       | Invalid(_, errDict) => errDict
       | _ => Js.Dict.empty()
       };
-
     // Update field values by converting each input to its Js.Json.t equivalent
     try (
       {
-        Js.Dict.set(
-          updatedEntity,
-          field.name,
-          Encode.encodeField(field, value),
-        );
+        Js.Dict.set(updatedEntity, field.name, value);
         switch (validateEntity(resource, updatedEntity)) {
         | Some(reportedErrors) =>
           setState(_ =>
@@ -188,6 +231,9 @@ let make =
       setState(_ => Invalid(updatedEntity |> Js.Json.object_, currentErrors));
     };
   };
+
+  let updateField = (field: Field.t, value: option(string)) =>
+    updateFieldRaw(field, Encode.encodeField(field, value));
 
   let getFieldError = (field: Field.t): option(string) => {
     let printErrors = fieldErrs =>
@@ -217,6 +263,7 @@ let make =
     };
   };
 
+  /** TODO: rework schema for editField */
   let printEditor = (field: Field.t) => {
     let fieldJsonValue = getCurrentFieldValue(field);
     if (debug_mode == true) {
@@ -304,24 +351,20 @@ let make =
       switch (field.display_type) {
       | Date =>
         let dateValue =
-          Belt.Option.map(fieldJsonValue, jsonValue =>
-            Metadata.singleFieldDecode(jsonValue, field) |> Js.Date.fromString
-          );
+          switch (
+            Belt.Option.flatMap(fieldJsonValue, jsonValue =>
+              dateParse(Metadata.singleFieldDecode(jsonValue, field))
+            )
+          ) {
+          | Some(v) => Some(v)
+          | None =>
+            Belt.Option.flatMap(fieldJsonValue, jsonValue =>
+              altDateParse(Metadata.singleFieldDecode(jsonValue, field))
+            )
+          };
 
-        // Note: Date.parse may produce an "Invalid Date"; detect this as DatePicker will error
-        let validFromServer =
-          Belt.Option.mapWithDefault(dateValue, true, v => isJsDateValid(v));
+        Js.log3("dateValue", fieldJsonValue, dateValue);
 
-        let dateValue = validFromServer ? dateValue : None;
-
-        if (debug_mode == true) {
-          Js.log4(
-            "input date value",
-            dateValue,
-            "validFromServer",
-            validFromServer,
-          );
-        };
         // TODO: look for better width styling option on DatePicker
         <div style={ReactDOMRe.Style.make(~width="100%", ())}>
           <DatePicker
@@ -337,7 +380,9 @@ let make =
               |> updateField(field)
             }
           />
-          {if (!validFromServer) {
+          {if (!Belt.Option.isSome(fieldJsonValue)
+               && Belt.Option.isNone(dateValue)) {
+             Js.log3("Invalid date: ", fieldJsonValue, dateValue);
              <div className="text-red">
                {str("Invalid date from server: " ++ fieldStringValue)}
              </div>;
@@ -364,7 +409,6 @@ let make =
         />;
       };
     };
-    // </div>
   };
 
   let printCurrentDisplayValue = field =>
@@ -372,55 +416,14 @@ let make =
     |> Js.Json.object_
     |> DetailView.EntityDetail.getFieldDisplayValue(_, field);
 
-  let printRow = (field: Field.t) => {
-    let fieldJsonValue = getCurrentFieldValue(field);
-    if (debug_mode == true) {
-      Js.log4("printRow", field.name, "value", fieldJsonValue);
-    };
-    <div key={"row-field-" ++ field.name} className="detail_table_row">
-      <div className="md:text-right">
-        <label
-          className={
-            "font-bold text-right"
-            ++ (isFieldModified(field) ? " bg-orange-300" : "")
-          }
-          htmlFor={"editor-" ++ field.name}>
-          {str(field.title ++ ": ")}
-        </label>
-      </div>
-      {if (field.editable) {
-         printEditor(field);
-       } else {
-         printCurrentDisplayValue(field);
-       }}
-      {// FIXME: causes a mouse focus to be lost: solution is to hide the element until needed
-       switch (getFieldError(field)) {
-       | Some(err) => <span className="text-red-500"> {str(err)} </span>
-       | None => ReasonReact.null
-       }}
-    </div>;
-  };
-
-  let printEntity = () => {
-    <form className="detail_table" id="entity_table">
-      {resource.fields
-       |> Array.map(_, field => printRow(field))
-       |> ReasonReact.array}
-    </form>;
-  };
-
-  let printAsJson = entity => {
-    str(entity |> Js.Json.stringify);
-  };
-
-  let save = (currentEntity, _evt) => {
+  let save = (currentEntity, ~isNew, ~entityId, ~saveAction, ()) => {
     setState(_ => Saving(currentEntity));
 
     Js.log("Save entity...");
-
+    // let saveAction = Some(_ => ());
     let processResult = result =>
       switch (result) {
-      | Result.Ok(entity) =>
+      | Belt.Result.Ok(entity) =>
         Js.log2("Save success: ", entity);
         switch (saveAction) {
         | Some(saveActionFunction) =>
@@ -429,7 +432,7 @@ let make =
         | None => setState(_ => SaveSuccess(entity))
         };
 
-      | Result.Error(message) =>
+      | Belt.Result.Error(message) =>
         // Decode a dict(dict(string))
         try (
           {
@@ -438,7 +441,7 @@ let make =
             Js.Json.decodeObject(Json.parseOrRaise(message))
             |> Belt.Option.getExn
             |> Js.Dict.entries
-            |> Array.forEach(_, ((key, v)) =>
+            |> Belt.Array.forEach(_, ((key, v)) =>
                  Js.Dict.set(errors, key, v |> Json.Decode.(dict(string)))
                );
 
@@ -460,114 +463,35 @@ let make =
         // setState(_=> SaveFail(currentEntity, None, Some(errors)));
         }
       };
-
-    if (isNew) {
-      ApiClient.postEntity(resource.name, currentEntity)
-      |> Js.Promise.then_(result => {
-           processResult(result);
-           Js.Promise.resolve();
-         })
-      |> ignore;
-    } else {
-      ApiClient.patchEntity(resource.name, id, currentEntity)
-      |> Js.Promise.then_(result => {
-           processResult(result);
-           Js.Promise.resolve();
-         })
-      |> ignore;
-    };
+    entityId |> Belt.Option.isNone || isNew
+      ? ApiClient.postEntity(resource.name, currentEntity)
+        |> Js.Promise.then_(result => {
+             processResult(result);
+             Js.Promise.resolve();
+           })
+        |> ignore
+      : ApiClient.patchEntity(
+          resource.name,
+          Belt.Option.getExn(entityId),
+          currentEntity,
+        )
+        |> Js.Promise.then_(result => {
+             processResult(result);
+             Js.Promise.resolve();
+           })
+        |> ignore;
   };
+};
 
-  let printErrorMessage = (~msg="Form Errors!", ()) =>
-    <div id="form-errors" className="">
-      <div className="text-red-500"> {str(msg)} </div>
-    </div>;
+type renderSig =
+  (Js.Json.t, state, (state => state) => unit) => ReasonReact.reactElement;
 
-  switch (state) {
-  | SaveFail(_, optErrMsg, _) =>
-    <div id="entity">
-      <h3>
-        <button
-          style={ReactDOMRe.Style.make(~display="none", ())}
-          className="btn btn-gray"
-          onClick={_ => ()}>
-          {str("Save")}
-        </button>
-        <button className="btn btn-gray" onClick={_ => refreshAction()}>
-          {str("Cancel")}
-        </button>
-      </h3>
-      // <h3 className="shadow"> {str("Edit entity: " ++ resource.title)} </h3>
-      {printErrorMessage(~msg=?optErrMsg, ())}
-      {printEntity()}
-    </div>
-  | Invalid(_, _) =>
-    <div id="entity">
-      <h3>
-        <button
-          className="btn btn-gray"
-          style={ReactDOMRe.Style.make(~display="none", ())}
-          onClick={_ => ()}>
-          {str("Save")}
-        </button>
-        <button className="btn btn-gray" onClick={_ => refreshAction()}>
-          {str("Cancel")}
-        </button>
-      </h3>
-      // <h3 className="shadow"> {str("Edit entity: " ++ resource.title)} </h3>
-      {printErrorMessage()}
-      {printEntity()}
-    </div>
-  | Modified(currentEntity) =>
-    <div id="entity">
-      <h3>
-        <button className="btn btn-gray" onClick={save(currentEntity)}>
-          {str("Save")}
-        </button>
-        <button className="btn btn-gray" onClick={_ => refreshAction()}>
-          {str("Cancel")}
-        </button>
-      </h3>
-      // <h3 className="shadow">
-      //   {str("Edit entity: " ++ resource.title ++ "/" ++ id)}
-      // </h3>
-      {printEntity()}
-    </div>
-  | Edit(_) =>
-    <div id="entity">
-      // Note: keep the node, with style change, so that DOM update is avoided
-      // - otherwise mouse focus is lost when the button appears (on Chrome 74.0)
+[@react.component]
+let make = (~render: renderSig, ~entity: Js.Json.t, ~initialState=?) => {
+  let (state, setState) =
+    React.useState(() =>
+      Belt.Option.getWithDefault(initialState, Edit(entity))
+    );
 
-        <h3>
-          <button
-            className="btn btn-gray"
-            style={ReactDOMRe.Style.make(~display="none", ())}
-            onClick={_ => ()}>
-            {str("Save")}
-          </button>
-          <button className="btn btn-gray" onClick={_ => refreshAction()}>
-            {str("Cancel")}
-          </button>
-        </h3>
-        // <h3 className="shadow">
-        //   {str("Edit entity: " ++ resource.title ++ "/" ++ id)}
-        // </h3>
-        {printEntity()}
-      </div>
-  | Saving(currentEntity) => <div> {currentEntity |> printAsJson} </div>
-  // </h3>
-  //   {str("Saving entity: " ++ resource.title ++ "/" ++ id ++ " ...")}
-  // <h3 className="shadow">
-  | SaveSuccess(newEntity) =>
-    <div>
-      <button className="btn btn-gray" onClick={_ => refreshAction()}>
-        {str("Back")}
-      </button>
-      // <h3 className="shadow">
-      //   {str("Save success for: " ++ resource.title ++ "/" ++ id)}
-      // </h3>
-      <h3 className="shadow"> {str("JSON posted:")} </h3>
-      {newEntity |> printAsJson}
-    </div>
-  };
+  render(entity, state, setState);
 };

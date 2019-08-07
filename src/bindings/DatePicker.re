@@ -3,6 +3,7 @@
 [@bs.module "react-datepicker/dist/react-datepicker.js"] [@react.component]
 external make:
   (
+    ~id: string,
     ~selected: option(Js.Date.t),
     ~onChange: Js.Nullable.t(Js.Date.t) => unit,
     ~dateFormat: string=?,

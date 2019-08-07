@@ -1,4 +1,3 @@
-[%bs.raw {|require('./css/simpleTable.css')|}];
 
 open Belt;
 open Common;

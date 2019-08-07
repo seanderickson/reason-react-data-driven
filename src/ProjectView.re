@@ -129,6 +129,8 @@ let make =
     Js.log2("LoadSuccess", entity);
     let experimentResource =
       Belt.Option.getExn(getFilledResource("experiment"));
+
+    // For demonstration purposes:
     // Create field display overrides using a "viewFunctionMap":
     // TODO: For demonstration only ( these examples can also be done using vocabulary)
     // TODO: demonstrate a similar "editFunctionMap" for custom editor implementations.
@@ -195,7 +197,9 @@ let make =
            | LoadSuccess(entities) =>
              <div>
                <h3>
-                 <button onClick={_ => addExperiment(entities)}>
+                 <button
+                   className="btn btn-gray"
+                   onClick={_ => addExperiment(entities)}>
                    {str("Add experiment")}
                  </button>
                </h3>

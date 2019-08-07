@@ -205,6 +205,27 @@ module ResourceContext = {
         result;
       };
 
+      let getMicroscopeVocabulary = () => {
+        Js.log("getMicroscopeVocabulary...");
+        Belt.Option.map(getEntities(`microscope), entityMap =>
+          Belt.Map.String.valuesToArray(entityMap)
+          |> Belt.Array.map(_, (json) =>
+               (
+                 {
+                   let microscope = Microscope.decode(json);
+                   {
+                     scope: "microscope.name",
+                     key: microscope.id |> string_of_int,
+                     title: microscope.name,
+                     description:
+                       Some(Js.Array.joinWith(", ", microscope.objectives)),
+                   };
+                 }: Vocabulary.t
+               )
+             )
+        );
+      };
+
       let getIrbVocabulary = () => {
         Belt.Option.map(getEntities(`irb), entityMap =>
           Belt.Map.String.valuesToArray(entityMap)
@@ -252,6 +273,10 @@ module ResourceContext = {
                        | "autosuggest.scientist" => {
                            ...field,
                            vocabularies: getAutosuggestScientistVocabulary(),
+                         }
+                       | "microscope.name" => {
+                           ...field,
+                           vocabularies: getMicroscopeVocabulary(),
                          }
                        | _ => field
                        }

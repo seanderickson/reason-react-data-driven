@@ -3,7 +3,6 @@ open Common;
 open Metadata;
 open Store;
 
-
 let processTemplate: (string, Js.Json.t) => string = [%bs.raw
   {|
     function(templateString, templateVars){
@@ -24,6 +23,9 @@ let processTemplate: (string, Js.Json.t) => string = [%bs.raw
 // ];
 
 module EntityDetail = {
+  let isLinkAbsolute = href =>
+    Js.String.toLowerCase(href) |> Js.String.indexOf("http") > (-1);
+
   let getFieldDisplayValue = (entity, field) => {
     switch (Metadata.Field.getDisplayValue(entity, field)) {
     | Some(fvalue) =>
@@ -36,26 +38,20 @@ module EntityDetail = {
       | None =>
         switch (field.href_template) {
         | Some(href_template) =>
-          <a href={processTemplate(href_template, entity)}>
-            {str(displayValue)}
-          </a>
+          processTemplate(href_template, entity)
+          |> (
+            href =>
+              if (isLinkAbsolute(href)) {
+                <a tabIndex=(-1) href> {str(displayValue)} </a>;
+              } else {
+                <Link href> {str(displayValue)} </Link>;
+              }
+          )
         | None => str(displayValue)
         }
       };
     | None => str("-")
     };
-  };
-
-  let printRow = (entity, field: Field.t) => {
-    <div key={"row-field-" ++ field.name} className="detail_table_row">
-      <label
-        className="font-bold text-right" htmlFor={"inline-" ++ field.name}>
-        {str(field.title ++ ": ")}
-      </label>
-      <span id={"inline-" ++ field.name} className="text-left">
-        {getFieldDisplayValue(entity, field)}
-      </span>
-    </div>;
   };
 };
 
@@ -69,15 +65,32 @@ let make =
       ~children=ReasonReact.null,
       (),
     ) => {
+  let printRow = (entity, field: Field.t) => {
+    <div key={"row-field-" ++ field.name} className="detail_table_row">
+      <label
+        className="font-bold text-right" htmlFor={"inline-" ++ field.name}>
+        {str(field.title ++ ": ")}
+      </label>
+      <span id={"inline-" ++ field.name} className="text-left">
+        {if (Js.Dict.keys(viewFunctionMap) |> Js.Array.includes(field.name)) {
+           Js.Dict.unsafeGet(viewFunctionMap, field.name)
+           |> (viewFunction => viewFunction(entity) |> str);
+         } else {
+           EntityDetail.getFieldDisplayValue(entity, field);
+         }}
+      </span>
+    </div>;
+  };
+
   <div>
-    <h3 className="shadow text-center font-bold">
-      {str("Entity detail: " ++ resource.title ++ ": " ++ id)}
-    </h3>
     <div className="detail_table" id="entity_table">
       {resource.fields
-       |> Array.map(_, field => EntityDetail.printRow(entity, field))
+       |> Array.map(_, field => printRow(entity, field))
        |> ReasonReact.array}
     </div>
     children
   </div>;
+  // </h3>
+  //   {str("Entity detail: " ++ resource.title ++ ": " ++ id)}
+  // <h3 className="shadow text-center font-bold">
 };

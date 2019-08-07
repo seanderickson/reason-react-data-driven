@@ -44,6 +44,8 @@ module Vocabulary = {
     };
 
   let decodeMany = json => Json.Decode.(json |> array(decode));
+
+  // let create = (~scope:string, ~key: string, ~title: string, ~desc:None ) => {}
 };
 
 module Field = {
