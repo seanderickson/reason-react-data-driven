@@ -20,12 +20,82 @@ logger = logging.getLogger(__name__)
 #
 # - read db.xlxs file into JSON: see "from_xlsx"
 #
-# NOTE: field schema is hardcoded and must be maintained; see fields_schema
+# NOTE: The "Field" schema is hardcoded; 
+# data types for conversion are entered manually, see the "SCHEMA" section.
 # 
 ####
 
+class SCHEMA(object):
 
-parser = argparse.ArgumentParser(description='Read the json metadata file to xls and write from xls to json')
+  class TABLES(object):
+    
+    FIELD = 'field'
+    DERIVED_FIELD = 'derived_field'
+    RESOURCE = 'resource'
+    VOCAB = 'vocabulary'
+
+  class VOCAB(object):
+
+    class data_type(object):
+      
+      STRING = 'string'
+      INTEGER = 'integer'
+      FLOAT = 'float'
+      BOOLEAN = 'boolean'
+      ARRAY_STRING = 'arraystring'
+      ARRAY_INT = 'arrayint'
+      
+  class FIELD(object):
+   # Predefined Meta Field schema
+
+    resource_name = 'field'
+
+    NAME = 'name'
+    RESOURCE_NAME = 'resource_name'
+    ORDINAL = 'ordinal'
+    FIELD_REF = 'field_ref'
+    TITLE = 'title'
+    DESCRIPTION = 'description'
+    DATA_TYPE = 'data_type'
+    DISPLAY_TYPE = 'display_type'
+    EDITABLE = 'editable'
+    EDIT_TYPE = 'edit_type'
+    VOCAB_SCOPE = 'vocab_scope'
+    REF_ENDPOINT = 'ref_endpoint'
+    HREF_TEMPLATE = 'href_template'
+    VALIDATORS = 'validators'
+    LIST_ORDINAL = 'list_ordinal'
+    DEFAULT = 'default'
+
+    identity_fields = [RESOURCE_NAME, NAME, ORDINAL]
+
+    final_required_fields = identity_fields + [DATA_TYPE, TITLE]
+
+  FIELD.data_types = {
+      FIELD.NAME: VOCAB.data_type.STRING,
+      FIELD.RESOURCE_NAME: VOCAB.data_type.STRING,
+      FIELD.ORDINAL: VOCAB.data_type.INTEGER,
+      FIELD.FIELD_REF: VOCAB.data_type.STRING,
+      FIELD.TITLE: VOCAB.data_type.STRING,
+      FIELD.DESCRIPTION: VOCAB.data_type.STRING,
+      FIELD.DATA_TYPE: VOCAB.data_type.STRING,
+      FIELD.DISPLAY_TYPE: VOCAB.data_type.STRING,
+      FIELD.EDITABLE: VOCAB.data_type.BOOLEAN,
+      FIELD.EDIT_TYPE: VOCAB.data_type.STRING,
+      FIELD.VOCAB_SCOPE: VOCAB.data_type.STRING,
+      FIELD.REF_ENDPOINT: VOCAB.data_type.STRING,
+      FIELD.HREF_TEMPLATE: VOCAB.data_type.STRING,
+      FIELD.VALIDATORS: VOCAB.data_type.ARRAY_STRING,
+      FIELD.LIST_ORDINAL: VOCAB.data_type.INTEGER,
+      FIELD.DEFAULT: VOCAB.data_type.STRING,
+    }
+ 
+  class RESOURCE(object):
+
+    resource_name = 'resource'
+    
+parser = argparse.ArgumentParser(
+  description='Read the json metadata file to xls and write from xls to json')
 parser.add_argument(
     '-f', '--input_file', required=True,
     help='''input file''')
@@ -34,8 +104,7 @@ parser.add_argument(
     help='''output file''')
 parser.add_argument(
     '-v', '--verbose', dest='verbose', action='count',
-    help="Increase verbosity (specify multiple times for more)")
-
+    help='Increase verbosity (specify multiple times for more)')
 
 def from_json(input_file, output_filename):
   '''
@@ -62,41 +131,45 @@ def from_json(input_file, output_filename):
   TODO: validation is not performed
 
   '''
+  FIELD = SCHEMA.FIELD
+
   input_data = json.loads(input_file.read())
 
-  if 'field' not in input_data:
-    raise Exception('Required "field" element not found')
+  if SCHEMA.TABLES.FIELD not in input_data:
+    raise Exception(
+      'Required "%r" resource entry not found' % SCHEMA.TABLES.FIELD)
 
   fields = OrderedDict()
 
-  for field in input_data['field']:
-    resource_name = field['resource_name']
+  for field in input_data[SCHEMA.TABLES.FIELD]:
+    resource_name = field[FIELD.RESOURCE_NAME]
     if resource_name not in fields:
       fields[resource_name] = OrderedDict()
-    fields[resource_name][field['name']] = field
+    fields[resource_name][field[FIELD.NAME]] = field
 
   # Order resources
   if 'resource' not in input_data:
     raise Exception('Required "resource" element not found')
-  sorted_resources = sorted([(r['id'],r['name']) for r in input_data['resource']])
+  sorted_resources = sorted(
+    [(r['id'],r[FIELD.NAME]) for r in input_data['resource']])
 
   logger.info('field resources: %r, %d', fields.keys(), len(fields) )
-  logger.info('field fields: %r', fields['field'].keys())
+  logger.info('field fields: %r', fields[SCHEMA.TABLES.FIELD].keys())
 
   wb = xlsxwriter.Workbook(output_filename, {'constant_memory': True})
 
-  # Field metadata
+  # Write the Field metadata
 
-  target_resource = 'field'
+  target_resource = FIELD.resource_name
   sheet = wb.add_worksheet(target_resource)
 
   def fieldEncode(field_name, v):
     val = v
-    if field_name == "editable":
-      if v is False:
-        val = 'false'
-      else:
+    if field_name == FIELD.EDITABLE:
+      if v is True:
         val = 'true'
+      else:
+        val = 'false'
     if val is None:
       val = ""
     if isinstance(val, (list,tuple)):
@@ -118,9 +191,10 @@ def from_json(input_file, output_filename):
       sheet.write_row(current_row,0,row)
       current_row += 1
 
-  # Other entries are resource data to be written
+  # Write other entries are resource data to be written
+  
   for id,resource_name in sorted_resources:
-    if resource_name == 'field':
+    if resource_name == FIELD.resource_name:
       continue
     if resource_name not in fields:
       logger.warn('resource has no field definitions: %r', resource_name)
@@ -133,7 +207,8 @@ def from_json(input_file, output_filename):
     current_row = 1
     for data in list_data:
 
-      row = [fieldEncode(field_name, data.get(field_name, "")) for field_name in field_names]
+      row = [fieldEncode(field_name, data.get(field_name, "")) 
+        for field_name in field_names]
       sheet.write_row(current_row, 0, row)
       current_row += 1
   
@@ -219,7 +294,8 @@ def from_xlsx(input_file, output_filename):
     ...
   }
   '''
-
+  FIELD = SCHEMA.FIELD
+  DATA_TYPE = SCHEMA.VOCAB.data_type
   wb = xlrd.open_workbook(file_contents=input_file.read())
   workbook_ds = workbook_as_datastructure(wb)
 
@@ -268,159 +344,180 @@ def from_xlsx(input_file, output_filename):
   def parse_boolean(v):
     val = v
     if val is None:
-      return False
+      return val
     if val is True or val is False:
       return val
     val = str(val).strip()
     if(val.lower() == 'true' 
-      or val.lower() == 't' or val == '1'): 
+      or val.lower() == 't' or val == '1'):
       return True
     return False    
 
   def parse_arraystring(v):
+    if isinstance(v, (list,tuple)):
+      # Already parsed (parent field)
+      return v
     val = parse_string(v)
     if val is None:
       return val
     return val.split(";")
     
   def parse_arrayint(v):
+    if isinstance(v, (list,tuple)):
+      # Already parsed (parent field)
+      return v
     val = parse_arraystring(v)
     if val is None:
       return val
     
     return [parse_int(lv) for lv in val]
 
-  # Predefined Meta Field schema
-  fields_schema = {
-    'name': {
-      'data_type': 'string',
-      'parser': parse_string,
-      'default': None,
-      'required': True
-    },
-    'resource_name': {
-      'data_type': 'string',
-      'parser': parse_string,
-      'default': None,
-      'required': True
-    },
-    'title': {
-      'data_type': 'string',
-      'parser': parse_string,
-      'default': None,
-      'required': True
-    },
-    'description': {
-      'data_type': 'string',
-      'parser': parse_string,
-      'default': None,
-      'required': True
-    },
-    'data_type': {
-      'data_type': 'string',
-      'parser': parse_string,
-      'default': None,
-      'required': True
-    },
-    'display_type': {
-      'data_type': 'string',
-      'parser': parse_string,
-      'default': None,
-      'required': True
-    },
-    'ref_endpoint': {
-      'data_type': 'string',
-      'parser': parse_string,
-      'default': None,
-      'required': False
-    },
-    'href_template': {
-      'data_type': 'string',
-      'parser': parse_string,
-      'default': None,
-      'required': False
-    },
-    'validators': {
-      'data_type': 'arraystring',
-      'parser': parse_arraystring,
-      'default': None,
-      'required': False
-    },
-    'editable': {
-      'data_type': 'boolean',
-      'default': True,
-      'parser': parse_boolean,
-      'required': False
-    },
-    'vocab_scope': {
-      'data_type': 'string',
-      'parser': parse_string,
-      'default': None,
-      'required': False
-    },
-    'detail_ordinal': {
-      'data_type': 'integer',
-      'parser': parse_int,
-      'default': None,
-      'required': False
-    },
-    'list_ordinal': {
-      'data_type': 'integer',
-      'parser': parse_int,
-      'default': None,
-      'required': False
-    },
-  }
   parsers_by_data_type = {
-    'string': parse_string,
-    'integer': parse_int,
-    'float': parse_float,
-    'boolean': parse_boolean,
-    'arraystring': parse_arraystring,
-    'arrayint': parse_arrayint,
+    DATA_TYPE.STRING: parse_string,
+    DATA_TYPE.INTEGER: parse_int,
+    DATA_TYPE.FLOAT: parse_float,
+    DATA_TYPE.BOOLEAN: parse_boolean,
+    DATA_TYPE.ARRAY_STRING: parse_arraystring,
+    DATA_TYPE.ARRAY_INT: parse_arrayint,
   }
 
-  def field_decode(field_schema, v):
-    val = field_schema['parser'](v)
-    if val is None:
-      val = field_schema.get('default')
-    return val
+  def field_decode(data_type, v):
+    return parsers_by_data_type[data_type](v)
 
-  # Parse the Meta Field fields
+  # Parse the Meta Field "field" sheet
 
-  raw_fields = unspooled_data.get('field')
+  raw_fields = unspooled_data.get(SCHEMA.TABLES.FIELD)
   if not raw_fields:
-    raise Exception("No fields definition found")
+    raise Exception('No "%r" definition sheet found' % SCHEMA.TABLES.FIELD)
 
   resource_field_dict = defaultdict(dict)
   parsed_fields = []
   for raw_field in raw_fields:
     parsed_field = {}
     for fieldkey, val in raw_field.items():
-      field_schema = fields_schema.get(fieldkey)
-      if field_schema is None:
+      data_type = FIELD.data_types.get(fieldkey)
+      if data_type is None:
         raise Exception("Unknown field: {}: {}".format(fieldkey, raw_field) )
-      parsed_field[fieldkey] = field_decode(field_schema, val)
+      parsed_field[fieldkey] = field_decode(data_type, val)
 
-    resource_field_dict[parsed_field['resource_name']][parsed_field['name']] = parsed_field
+    # Verify identity_fields fields
+    keys_null = set([k for k,v in parsed_field.items() if v is None])
+    if set(FIELD.identity_fields) & keys_null:
+      raise Exception(
+        "derived field: {}, identity_fields must be defined: {}"
+        .format(parsed_field, set(FIELD.identity_fields) & keys_null))
+
+    resource_field_dict[parsed_field[FIELD.RESOURCE_NAME]]\
+      [parsed_field[FIELD.NAME]] = parsed_field
     parsed_fields.append(parsed_field)
-  unspooled_data['field'] = parsed_fields
 
-  # Check for required Field fields
+  # Check required fields
 
-  required_fields = set([k for k,f in fields_schema.items() if f['required'] is True ])
   for resource_name, field_dict in resource_field_dict.items():
     for field_name, field in field_dict.items():
       keys_null = set([k for k,v in field.items() if v is None])
-      if required_fields & keys_null:
+      if set(FIELD.final_required_fields) & keys_null:
         raise Exception(
           "Resource: {}, meta field: {}, required fields must be defined: {}"
-          .format(resource_name, field_name, required_fields & keys_null))
+          .format(resource_name, field_name, 
+                  set(FIELD.final_required_fields) & keys_null))
+
+  unspooled_data[SCHEMA.TABLES.FIELD] = parsed_fields
+
+  # Parse the Meta "derived_field" fields
+  raw_derived_fields = unspooled_data.get('derived_field')
+  if raw_derived_fields:
+
+    derived_field_dict = defaultdict(dict)
+    parsed_fields = []
+    for raw_field in raw_derived_fields:
+      
+      # Verify identity_fields fields
+      keys_null = set([k for k,v in raw_field.items() if v is None])
+      if set(FIELD.identity_fields) & keys_null:
+        raise Exception(
+          "derived field: {}, identity_fields must be defined: {}"
+          .format(parsed_field, set(FIELD.identity_fields) & keys_null))
+      
+      resource_name = raw_field[FIELD.RESOURCE_NAME]
+      name = raw_field[FIELD.NAME]
+      
+      # Verify that the derived field does not shadow a non-derived field
+      if resource_name in resource_field_dict:
+        raise Exception(
+          "Derived field definition conflict, already defined: {}:{}".format(
+            resource_name, name))
+
+      field_ref = raw_field.get('field_ref')
+      if field_ref:
+       
+        # Verify that the derived field references a field
+       
+        parts = field_ref.split("/")
+        if len(parts) != 2:
+          raise Exception(
+            'Derived field "field_ref" format is "resource_name/field_name":'
+            ' {} in {}'.format(field_ref, raw_field))
+
+        (parent_resource_name, parent_field_name) = parts
+        if parent_resource_name not in resource_field_dict:
+          raise Exception(
+            'Derived field parent resource not found: {} in {}'.format(
+            parent_resource_name, raw_field))
+        parent_field = resource_field_dict[
+          parent_resource_name].get(parent_field_name)
+        if not parent_field:
+          raise Exception('{}:{}: Derived field not found: {}, resources: {}, '
+            'fields found: {}'.format(
+              resource_name, name, field_ref, 
+              resource_field_dict.keys(),
+              resource_field_dict[parent_resource_name].keys()))
+
+        # Override values with the parent field values
+
+        for (propkey, propval) in parent_field.items():
+          derived_field_override_val = raw_field.get(propkey)
+          if derived_field_override_val is not None:
+            if DEBUG:
+              logger.info('Derived field val overrides parent field val: %r',
+              (resource_name, name, propkey, propval, parent_field.get(propkey)))
+          else:
+            raw_field[propkey] = propval
+
+      # Parse
+
+      parsed_field = {}
+      for fieldkey, val in raw_field.items():
+        data_type = FIELD.data_types.get(fieldkey)
+        if data_type is None:
+          raise Exception("Unknown field: {}: {}".format(fieldkey, raw_field) )
+        parsed_field[fieldkey] = field_decode(data_type, val)
+      
+
+      logger.info("parsed field: %r", parsed_field)
+      derived_field_dict[parsed_field[FIELD.RESOURCE_NAME]]\
+        [parsed_field[FIELD.NAME]] = parsed_field
+      parsed_fields.append(parsed_field)
+
+    # # Check for required Field fields
+
+    for resource_name, field_dict in derived_field_dict.items():
+      for field_name, field in field_dict.items():
+        keys_null = set([k for k,v in field.items() if v is None])
+        if set(FIELD.final_required_fields) & keys_null:
+          raise Exception(
+            "Resource: {}, meta field: {}, required fields must be defined: {}"
+            .format(resource_name, field_name, 
+                    set(FIELD.final_required_fields) & keys_null))
+  
+  # After parsing, add derived fields to the other fields
+  unspooled_data[SCHEMA.TABLES.FIELD].extend(parsed_fields)
 
   # Parse the rest of the value dicts using the Meta Field definitions
   
   for resource_name in unspooled_data.keys():
-    if resource_name == 'field':
+    if resource_name in [
+      SCHEMA.TABLES.FIELD,SCHEMA.TABLES.DERIVED_FIELD, 'notes']:
       continue
     
     raw_values = unspooled_data[resource_name]
@@ -438,25 +535,27 @@ def from_xlsx(input_file, output_filename):
           raise Exception("Resource: {}, unknown field: {}".format(
             resource_name, field_name))
         
-        parser = parsers_by_data_type.get(field_schema['data_type'])
+        parser = parsers_by_data_type.get(field_schema[FIELD.DATA_TYPE])
         if parser is None:
           raise Exception(
             "Resource: {}, field: {}, unknown data type: {}".format(
-              resource_name, field_name, field_schema['data_type']))
+              resource_name, field_name, field_schema[FIELD.DATA_TYPE]))
         parsed_row[field_name] = parser(raw_val)
     unspooled_data[resource_name] = parsed_rows
 
   # Use ordinals to order the data
   ordered_data = OrderedDict()
 
-  resources = sorted([(d['id'],d['name']) for d in unspooled_data['resource']])
+  resources = sorted(
+    [(d['id'],d[FIELD.NAME]) for d in unspooled_data['resource']])
   for id,resource in resources:
     rows = []
     ordered_data[resource] = rows
 
     fields = resource_field_dict[resource]
-    fields_sorted = sorted((f['list_ordinal'],f['name']) for f in fields.values() )
-    
+    fields_sorted = sorted(
+      (f[FIELD.ORDINAL],f[FIELD.NAME]) for f in fields.values() )
+  
     rows_of_dicts = unspooled_data.get(resource)
     if rows_of_dicts:
       for old_row in rows_of_dicts:
@@ -469,8 +568,6 @@ def from_xlsx(input_file, output_filename):
 
   with open(output_filename, 'w') as of:
     of.write(json.dumps(ordered_data, indent=2))
-  # with open(output_filename, 'w') as of:
-  #   of.write(json.dumps(unspooled_data, indent=2))
 
   logger.info('wrote: %r', output_filename)
 
