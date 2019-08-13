@@ -8,16 +8,16 @@ type dataType =
   | Integer
   | Float
   | Boolean
-  | ArrayString;
+  | ArrayString
+  | ArrayInt;
 
 type displayType =
-  | String
-  | Integer
-  | Float
-  | Boolean
+  | Vocabulary;
+
+type editType =
   | Date
   | Autosuggest
-  | List;
+  | Custom;
 
 // Try out poly variant: the jsConverter generates the "validatorFromJs" function
 [@bs.deriving jsConverter]
@@ -44,7 +44,6 @@ module Vocabulary = {
     };
 
   let decodeMany = json => Json.Decode.(json |> array(decode));
-
   // let create = (~scope:string, ~key: string, ~title: string, ~desc:None ) => {}
 };
 
@@ -58,18 +57,19 @@ module Field = {
     description: string,
     data_type: dataType,
     // Display type; may imply conversion, e.g. string => date
-    display_type: displayType,
+    display_type: option(displayType),
+    editable: bool,
+    edit_type: option(editType),
     // If field refers to another entity; endpoint for that entity
     ref_endpoint: option(string),
     href_template: option(string),
     validators: option(array(validator)),
-    editable: bool,
     vocab_scope: option(string),
     vocabularies: option(Vocabulary.vocabularies),
   }
   and fields = array(t);
 
-  let decode = json =>
+  let decode = json => {
     Json.Decode.{
       // id: json |> field("id", int),
       resource_name: json |> field("resource_name", string),
@@ -99,32 +99,44 @@ module Field = {
             }: dataType
           )
         ),
-      // display_type: json |> field("display_type", string),
       display_type:
         json
-        |> field("display_type", string)
-        |> (
-          (v) => (
-            switch (v) {
-            | "string" => String
-            | "integer" => Integer
-            | "float" => Float
-            | "list" => List
-            | "boolean" => Boolean
-            | "date" => Date
-            | "autosuggest" => Autosuggest
-            | unknownType =>
-              raise(
-                DecodeTypeException(
-                  "Missing type conversion case for field display_type: "
-                  ++ unknownType
-                  ++ ", JSON: "
-                  ++ Js.Json.stringify(json),
-                ),
-              )
-            }: displayType
-          )
-        ),
+        |> optional(field("display_type", string))
+        |> Belt.Option.map(_, (v) =>
+             (
+               switch (v) {
+               | "vocabulary" => Vocabulary // TODO: unused
+               | unknownType =>
+                 raise(
+                   DecodeTypeException(
+                     "Missing type conversion case for field display_type: "
+                     ++ unknownType
+                     ++ ", JSON: "
+                     ++ Js.Json.stringify(json),
+                   ),
+                 )
+               }: displayType
+             )
+           ),
+      edit_type:
+        json
+        |> optional(field("edit_type", string))
+        |> Belt.Option.map(_, v =>
+             switch (v) {
+             | "date" => Date
+             | "autosuggest" => Autosuggest
+             | "custom" => Custom
+             | unknownType =>
+               raise(
+                 DecodeTypeException(
+                   "Missing type conversion case for field edit_type: "
+                   ++ unknownType
+                   ++ ", JSON: "
+                   ++ Js.Json.stringify(json),
+                 ),
+               )
+             }
+           ),
       ref_endpoint: json |> optional(field("ref_endpoint", string)),
       href_template: json |> optional(field("href_template", string)),
       validators:
@@ -138,10 +150,11 @@ module Field = {
       editable:
         json
         |> optional(field("editable", bool))
-        |> Belt.Option.getWithDefault(_, true),
+        |> Belt.Option.getWithDefault(_, false),
       vocab_scope: json |> optional(field("vocab_scope", string)),
       vocabularies: None,
     };
+  };
   let decodeMany = json => Json.Decode.(json |> array(decode));
 
   let getVocabTitle = (field: t, rawValue: string) => {
@@ -177,6 +190,10 @@ module Field = {
         entity
         |> optional(field(schemaField.name, array(string)))
         |> Belt.Option.map(_, Js.Array.joinWith(","))
+      | ArrayInt =>
+        entity
+        |> optional(field(schemaField.name, array(int)))
+        |> Belt.Option.map(_, Js.Array.joinWith(","))
       | Boolean =>
         entity
         |> optional(field(schemaField.name, bool))
@@ -192,6 +209,7 @@ module Resource = {
     name: string,
     title: string,
     description: string,
+    resource_ref: option(string),
     fields: array(Field.t),
   }
   and resources = array(t);
@@ -202,6 +220,7 @@ module Resource = {
       name: json |> field("name", string),
       title: json |> field("title", string),
       description: json |> field("description", string),
+      resource_ref: json |> optional(field("resource_ref", string)),
       fields: [||],
     };
   };
@@ -229,6 +248,7 @@ let singleFieldDecode = (json: Js.Json.t, schemaField: Field.t): string => {
     | Float => json |> Json.Decode.float |> Js.Float.toString
     | ArrayString =>
       json |> Json.Decode.(array(string)) |> Js.Array.joinWith(", ")
+    | ArrayInt => json |> Json.Decode.(array(int)) |> Js.Array.joinWith(", ")
     | Boolean => json |> Json.Decode.(bool) |> string_of_bool
     }
   ) {

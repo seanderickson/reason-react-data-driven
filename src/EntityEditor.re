@@ -67,8 +67,10 @@ let validateField =
         }
       }
     );
-    if (field.display_type == Date) {
-      if (!(Js.Date.fromString(value) |> isJsDateValid)) {
+    if (field.edit_type == Some(Date)) {
+      if (Js.String.trim(value)
+          |> Js.String.length > 0
+          && Belt.Option.isNone(dateParse(value))) {
         Js.Dict.set(errors, "date", "Invalid date");
       };
     };
@@ -278,8 +280,8 @@ module Make = (StateContainer: State) : IF => {
         Belt.Array.some(validators, v => v == `required)
       );
     if (field.vocabularies != None) {
-      switch (field.display_type) {
-      | Autosuggest =>
+      switch (field.edit_type) {
+      | Some(Autosuggest) =>
         let suggestionsAvailable =
           Belt.Option.getExn(field.vocabularies)
           |> Belt.Array.map(_, vocab => vocab.key);
@@ -348,20 +350,12 @@ module Make = (StateContainer: State) : IF => {
         />;
       };
     } else {
-      switch (field.display_type) {
-      | Date =>
+      switch (field.edit_type) {
+      | Some(Date) =>
         let dateValue =
-          switch (
-            Belt.Option.flatMap(fieldJsonValue, jsonValue =>
-              dateParse(Metadata.singleFieldDecode(jsonValue, field))
-            )
-          ) {
-          | Some(v) => Some(v)
-          | None =>
-            Belt.Option.flatMap(fieldJsonValue, jsonValue =>
-              altDateParse(Metadata.singleFieldDecode(jsonValue, field))
-            )
-          };
+          Belt.Option.flatMap(fieldJsonValue, jsonValue =>
+            dateParse(Metadata.singleFieldDecode(jsonValue, field))
+          );
 
         Js.log3("dateValue", fieldJsonValue, dateValue);
 

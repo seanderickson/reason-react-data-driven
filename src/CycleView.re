@@ -23,7 +23,7 @@ let printFieldHeaderCell = (field: Field.t): ReasonReact.reactElement =>
     <div className="cycle-table-cell"> {str(field.title)} </div>
   </th>;
 
-// NOTE: Not using EntityEditTableRowView: 
+// NOTE: Not using EntityEditTableRowView:
 // Decided to devolve components: ChannelRow, ChannelTable, CycleRow
 // For:
 // - full control of render (sizing, styling) required
@@ -53,7 +53,10 @@ module ChannelRow = {
             Js.log2("calling chgFun", EditFunctor.getUpdatedEntity());
             onChange(EditFunctor.getUpdatedEntity() |> Js.Json.object_);
           | Invalid(_, currErrs) =>
-            onInvalid(EditFunctor.getUpdatedEntity() |> Js.Json.object_, currErrs)
+            onInvalid(
+              EditFunctor.getUpdatedEntity() |> Js.Json.object_,
+              currErrs,
+            )
           | _ => ()
           };
           Some(() => Js.log("cleanup Effect"));
@@ -367,7 +370,7 @@ module CycleTableRow = {
                    className="btn btn-gray"
                    onClick={_ => {
                      setChannelState(_ => Unchanged(channels));
-                     setState(_=>Edit(cycleEntity));
+                     setState(_ => Edit(cycleEntity));
                      setEditState(_ => View);
                    }}>
                    //  refreshAction()
@@ -390,7 +393,7 @@ module CycleTableRow = {
                    className="btn btn-gray"
                    onClick={_ => {
                      setChannelState(_ => Unchanged(channels));
-                     setState(_=>Edit(cycleEntity));
+                     setState(_ => Edit(cycleEntity));
                      setEditState(_ => View);
                    }}>
                    //refreshAction()
@@ -490,7 +493,12 @@ let make =
   let fetchEntities = () => {
     let fetchChannels = cycles => {
       Js.log("fetchChannels...");
-      ApiClient.getEntityListing(cycleChannelResource.name)
+      ApiClient.getEntityListing(
+        Belt.Option.getWithDefault(
+          cycleChannelResource.resource_ref,
+          cycleChannelResource.name,
+        ),
+      )
       |> Js.Promise.then_(result =>
            switch (result) {
            | Belt.Result.Ok(entities) =>
@@ -513,7 +521,12 @@ let make =
 
     Js.log("fetchEntities...");
     setState(_ => Loading);
-    ApiClient.getEntityListing(cycleResource.name)
+    ApiClient.getEntityListing(
+      Belt.Option.getWithDefault(
+        cycleResource.resource_ref,
+        cycleResource.name,
+      ),
+    )
     |> Js.Promise.then_(result =>
          switch (result) {
          | Belt.Result.Ok(entities) =>
@@ -532,7 +545,25 @@ let make =
                           cycle,
                           Belt.Array.keep(channels, channel =>
                             CycleChannel.belongsTo(~entity=channel, ~cycle)
-                          ),
+                          )
+                          |> Belt.Array.map(
+                               _,
+                               channel => {
+                                 // ** TEST modify the Json object before display **
+                                 let tempChannel =
+                                   Js.Json.decodeObject(channel)
+                                   |> Belt.Option.getExn;
+                                 let tempChannelId =
+                                   Js.Dict.unsafeGet(tempChannel, "id");
+                                 Js.Dict.set(
+                                   tempChannel,
+                                   "channel_id",
+                                   tempChannelId,
+                                 );
+                                 // Js.log3("tempChannel", tempChannel, tempChannelId);
+                                 Js.Json.object_(tempChannel);
+                               },
+                             ),
                         )
                       )
                       |> (
