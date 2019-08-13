@@ -15,10 +15,6 @@ or
 npm run server (for dev server at localhost:8000)
 ```
 
-After you see the webpack compilation succeed (the `npm run webpack` step), open up `build/index.html` (**no server needed!**). Then modify whichever `.re` file in `src` and refresh the page to see the changes.
-
-**For more elaborate ReasonReact examples**, please see https://github.com/reasonml-community/reason-react-example
-
 **Started with**, bsb -init my-react-app -theme react-hooks
 
 ## Run Project with Server
@@ -29,9 +25,15 @@ Note that any hot reload on a route will fall back to the root (`/`), so `Reason
 
 To use a port other than 8000 set the `PORT` environment variable (`PORT=8080 npm run server`).
 
+## Generate the metadata for the site ##
+
+$ source [virtualenv]
+
+$ PYTHONPATH=. python utils/metadata_writer.py -f metadata.json.xlsx -of metadata.json -v
+
 ## Run the "REST" API test server ##
 
-$ json-server --watch db.json 
+$ json-server --watch metadata.json 
 
 ## Build for Production
 

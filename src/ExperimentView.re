@@ -126,9 +126,9 @@ let make =
          | "planned" =>
            <CycleView
              experimentId={int_of_string(entityId)}
-             cycleResource={getFilledResource("cycle") |> Belt.Option.getExn}
+             cycleResource={getFilledResource("cycle_view") |> Belt.Option.getExn}
              cycleChannelResource={
-               getFilledResource("cycle_channel") |> Belt.Option.getExn
+               getFilledResource("cycle_channel_view") |> Belt.Option.getExn
              }
            />
          | "actual" => str("Actual table")

@@ -1,5 +1,6 @@
 open Belt;
 open Metadata;
+open Common;
 
 let debug_mode = false;
 let test_mock_error_mode = false;
@@ -27,7 +28,17 @@ let fetch = (url, decoder): apiResult('a) => {
          } else {
            response
            |> Fetch.Response.json
-           |> then_(json => resolve(Result.Ok(decoder(json))));
+           |> then_(json =>
+                try (
+                  {
+                    resolve(Result.Ok(decoder(json)));
+                  }
+                ) {
+                | x =>
+                  Js.log2("Decode error: ", x);
+                  resolve(Result.Error({j|Decode Error: $x|j}));
+                }
+              );
          };
        })
     |> catch(err => {
@@ -111,12 +122,42 @@ let postPatch = (url, method, decoder, payload: Js.Json.t): apiResult('a) => {
 
 exception BadStatus(string);
 
-let getVocabularies = () =>
-  fetch(apiUrl ++ "/vocabulary", Vocabulary.decodeMany);
+// Load metadata from an external fetch:
+// let getVocabularies = () =>
+//   fetch(apiUrl ++ "/vocabulary", Vocabulary.decodeMany);
 
-let getFields = () => fetch(apiUrl ++ "/field", Field.decodeMany);
+// let getFields = () => fetch(apiUrl ++ "/field", Field.decodeMany);
 
-let getResources = () => fetch(apiUrl ++ "/resource", Resource.decodeMany);
+// let getResources = () => fetch(apiUrl ++ "/resource", Resource.decodeMany);
+
+// Alternate: Just require the json file:
+let metadata = requireJson("../../metadata.json");
+
+let getVocabularies = () => {
+  Js.Json.decodeObject(metadata)
+  |> Belt.Option.getExn
+  |> Js.Dict.unsafeGet(_, "vocabulary")
+  |> Vocabulary.decodeMany
+  |> (decoded => Belt.Result.Ok(decoded))
+  |> Js.Promise.resolve;
+};
+
+let getFields = () => {
+  Js.Json.decodeObject(metadata)
+  |> Belt.Option.getExn
+  |> Js.Dict.unsafeGet(_, "field")
+  |> Field.decodeMany
+  |> (decoded => Belt.Result.Ok(decoded))
+  |> Js.Promise.resolve;
+};
+let getResources = () => {
+  Js.Json.decodeObject(metadata)
+  |> Belt.Option.getExn
+  |> Js.Dict.unsafeGet(_, "resource")
+  |> Resource.decodeMany
+  |> (decoded => Belt.Result.Ok(decoded))
+  |> Js.Promise.resolve;
+};
 
 let assembleField = (field: Field.t, vocabs): Field.t => {
   switch (field.vocab_scope) {

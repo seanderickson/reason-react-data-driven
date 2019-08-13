@@ -1,7 +1,7 @@
 open Belt;
 open Common;
 open Metadata;
-open Store;
+// open Store;
 
 let processTemplate: (string, Js.Json.t) => string = [%bs.raw
   {|

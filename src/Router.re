@@ -68,6 +68,7 @@ let make = () => {
       title: "Examples",
       description: "For testing",
       fields: [||],
+      resource_ref: None,
     };
     // let exampleForLogin: Metadata.Resource.t = {
     //   id: 999,

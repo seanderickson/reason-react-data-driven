@@ -14,6 +14,14 @@ type modalState = {
   callBackCancel: string => unit,
 };
 
+// External code accessors
+
+[@bs.val] external requireJson: string => Js.Json.t = "require";
+// e.g.
+// let metadata = requireJson("../db.uifield.json");
+// also can be:
+// let data: Js.Json.t = [%raw "require('./data.json')"];
+
 //module BMS = Belt.Map.String;
 
 let str = ReasonReact.string;
@@ -78,8 +86,7 @@ let isJsDateValid: Js.Date.t => bool = [%bs.raw
 |}
 ];
 
-
-let altDateParse = (rawString) : option(Js.Date.t) =>{ 
+let dateParseMDY = (rawString): option(Js.Date.t) => {
   let dateRegex = [%bs.re {|/(\d+)\/(\d+)\/(\d+)/|}];
   let result =
     Belt.Option.map(
@@ -116,8 +123,7 @@ let altDateParse = (rawString) : option(Js.Date.t) =>{
   };
 };
 
-
-let dateParse = (rawString): option(Js.Date.t) => {
+let dateParseYMD = (rawString): option(Js.Date.t) => {
   let dateRegex = [%bs.re {|/(\d+)-(\d+)-(\d+)/|}];
   let result =
     Belt.Option.map(
@@ -151,6 +157,13 @@ let dateParse = (rawString): option(Js.Date.t) => {
       None;
     }
   | None => None
+  };
+};
+
+let dateParse = (rawString): option(Js.Date.t) => {
+  switch (dateParseYMD(rawString)) {
+  | Some(dateVal) => Some(dateVal)
+  | None => dateParseMDY(rawString)
   };
 };
 

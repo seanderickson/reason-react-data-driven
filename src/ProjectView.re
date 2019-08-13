@@ -217,10 +217,10 @@ let make =
              </div>
            }
          | Add(newId, newEntity) =>
-           <EditView
+           <EntityEditFormView
              key={experimentResource.name ++ "-edit-" ++ projectId}
              resource=experimentResource
-             id=newId
+             entityId=newId
              entity=newEntity
              isNew=true
              refreshAction={_ => {
